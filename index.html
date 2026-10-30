@@ -16,2986 +16,654 @@
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
-  <!-- Leaflet CSS & JS for Real Geospatial Map & Multi-Zoom Layers -->
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', ' system-ui', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace']
-          },
-          colors: {
-            brand: {
-              50: '#fef2f2',
-              100: '#fee2e2',
-              500: '#ef4444',
-              600: '#dc2626',
-              700: '#b91c1c',
-              900: '#7f1d1d'
-            }
-          }
-        }
-      }
-    };
-  </script>
-
   <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
       font-family: 'Inter', sans-serif;
       background-color: #f8fafc;
-      color: #0f172a;
-      overflow-x: hidden;
+      overflow: hidden;
     }
-
-    /* Map Container & Custom Leaflet Markers */
-    #map-container {
-      width: 100%;
+    #map {
       height: calc(100vh - 64px);
-      background: #f8fafc;
-      position: relative;
+      width: 100%;
       z-index: 1;
     }
-
-    .leaflet-container {
-      font-family: 'Inter', sans-serif;
-      background: #ffffff !important;
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
     }
-
-    /* Red State Count Bubble (Zoom Level 1 - Matches main page.png) */
-    .state-bubble-marker {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #e11d48;
-      background: radial-gradient(circle at 30% 30%, #ef4444, #dc2626);
-      color: #ffffff;
-      font-weight: 800;
-      font-size: 14px;
-      border-radius: 9999px;
-      border: 2.5px solid #ffffff;
-      box-shadow: 0 6px 16px rgba(220, 38, 38, 0.45), 0 0 0 2px rgba(220, 38, 38, 0.25);
-      cursor: pointer;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
-      user-select: none;
-    }
-    .state-bubble-marker:hover {
-      transform: scale(1.16);
-      box-shadow: 0 8px 22px rgba(220, 38, 38, 0.65), 0 0 0 4px rgba(220, 38, 38, 0.3);
-      z-index: 1000 !important;
-    }
-
-    /* Regional / Metro Cluster Count Bubble (Zoom Levels 7-9) */
-    .regional-cluster-marker {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at 30% 30%, #ef4444, #dc2626);
-      color: #ffffff;
-      font-weight: 800;
-      border-radius: 9999px;
-      border: 3px solid #0f172a;
-      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.35), 0 0 0 3px rgba(220, 38, 38, 0.22);
-      cursor: pointer;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease;
-      user-select: none;
-    }
-    .regional-cluster-marker span.count-num {
-      color: #ffffff;
-      font-size: 15px;
-      line-height: 1;
-      font-weight: 800;
-    }
-    .regional-cluster-marker span.cluster-sub {
-      font-size: 9px;
-      font-weight: 600;
-      color: #fee2e2;
-      max-width: 54px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      margin-top: 1px;
-    }
-    .regional-cluster-marker:hover {
-      transform: scale(1.15);
-      background: #b91c1c;
-      z-index: 1500 !important;
-    }
-
-    /* Town Cluster Bubble (Zoom Level 10 Intermediate when a town is crowded) */
-    .town-cluster-marker {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+    /* Custom Marker Styling */
+    .geonet-cluster-marker {
+      background: #ef4444;
       color: #ffffff;
       border: 3px solid #ffffff;
       border-radius: 9999px;
-      box-shadow: 0 8px 20px rgba(185, 28, 28, 0.45), 0 0 0 3px rgba(220, 38, 38, 0.25);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .town-cluster-marker:hover {
-      transform: scale(1.12);
-      box-shadow: 0 10px 25px rgba(185, 28, 28, 0.65), 0 0 0 5px rgba(220, 38, 38, 0.35);
-    }
-
-    /* User Profile Node on Map (Zoom Level 10+ - Matches profile network.jpg & modern mode) */
-    .town-cluster-marker:hover {
-      transform: scale(1.12);
-      box-shadow: 0 10px 25px rgba(185, 28, 28, 0.65), 0 0 0 5px rgba(220, 38, 38, 0.35);
-    }
-
-    /* User Profile Node on Map (Zoom Level 3 - Matches profile network.jpg & modern mode) */
-    .profile-node-wrapper {
-      position: relative;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
       display: flex;
-      flex-direction: column;
       align-items: center;
-      cursor: pointer;
-      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform 0.15s ease;
     }
-    .profile-node-wrapper:hover {
-      transform: translateY(-3px) scale(1.08);
-      z-index: 2000 !important;
+    .geonet-cluster-marker:hover {
+      transform: scale(1.1);
     }
-    .profile-node-box {
-      width: 50px;
-      height: 50px;
-      background: #c4c4c4;
-      border: 2.5px solid #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.28);
+    .geonet-card-marker {
+      background: #ffffff;
+      border: 2px solid #0f172a;
+      border-radius: 9999px;
+      padding: 3px 10px 3px 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .geonet-card-marker:hover {
+      border-color: #ef4444;
+      transform: translateY(-2px);
+    }
+    .geonet-pin-marker {
+      width: 36px;
+      height: 36px;
+      border-radius: 9999px;
+      border: 3px solid #ef4444;
+      background: #ffffff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
-    }
-    .profile-node-box.classic-wireframe {
-      border-radius: 3px;
-      border: 1.5px solid #94a3b8;
-      background: #c8c8c8;
-    }
-    .profile-node-label {
-      margin-top: 4px;
-      background: rgba(15, 23, 42, 0.88);
-      backdrop-filter: blur(4px);
-      color: #ffffff;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 9999px;
-      white-space: nowrap;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      border: 1px solid rgba(255,255,255,0.15);
-    }
-
-    /* Rank 0-100 Gradient Bar & Pin (Matches image_4f4d7e.png) */
-    .rank-gradient-bar {
-      height: 22px;
-      width: 100%;
-      border: 2.5px solid #111827;
-      border-radius: 3px;
-      background: linear-gradient(90deg, #16a34a 0%, #84cc16 25%, #fde047 50%, #f97316 75%, #dc2626 92%, #991b1b 100%);
-      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.35), 0 1px 3px rgba(15, 23, 42, 0.12);
-      position: relative;
-    }
-    .rank-pin-marker {
-      position: absolute;
-      top: -28px;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      pointer-events: auto;
-      cursor: pointer;
-      transition: left 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.15s ease;
-      z-index: 20;
-    }
-    .rank-pin-marker:hover {
-      transform: translateX(-50%) scale(1.12);
-    }
-    .rank-pin-tooltip {
-      position: absolute;
-      top: -24px;
-      background: #0f172a;
-      color: #ffffff;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      white-space: nowrap;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.15s ease;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-    }
-    .rank-pin-marker:hover .rank-pin-tooltip {
-      opacity: 1;
-    }
-
-    /* Folder / Pill Tabs matching user page ref.png */
-    .profile-folder-tab {
-      position: relative;
-      border: 2px solid #cbd5e1;
-      border-bottom: none;
-      border-top-left-radius: 14px;
-      border-top-right-radius: 14px;
-      padding: 10px 24px;
-      font-weight: 600;
-      font-size: 14px;
-      color: #475569;
-      background: #f1f5f9;
-      transition: all 0.15s ease;
-      margin-right: 6px;
-      cursor: pointer;
-    }
-    .profile-folder-tab:hover {
-      background: #e2e8f0;
-      color: #0f172a;
-    }
-    .profile-folder-tab.active {
-      background: #ffffff;
-      color: #0f172a;
-      border-color: #334155;
-      z-index: 10;
-      margin-bottom: -2px;
-      padding-bottom: 12px;
-      box-shadow: 0 -3px 10px rgba(15, 23, 42, 0.05);
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
-    }
-
-    /* Pulse ring for selected node in Link Mode */
-    @keyframes pulse-ring {
-      0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
-      70% { box-shadow: 0 0 0 12px rgba(220, 38, 38, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
-    }
-    .linking-source-node .profile-node-box {
-      border: 3px solid #dc2626 !important;
-      animation: pulse-ring 1.5s infinite;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900 select-none">
+<body class="flex flex-col h-screen select-none">
 
-  <!-- ==================== TOP NAVIGATION BAR ==================== -->
-  <header class="h-16 bg-white border-b border-slate-200 px-4 lg:px-6 flex items-center justify-between sticky top-0 z-50 shadow-sm">
-    <!-- Left: Brand & Semantic Zoom Breadcrumbs -->
-    <div class="flex items-center gap-3 lg:gap-5">
-      <button onclick="app.navigateToMap()" class="flex items-center gap-2.5 text-left group focus:outline-none">
-        <div class="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-md shadow-red-600/25 group-hover:bg-red-700 transition">
-          <i class="fa-solid fa-diagram-project text-lg"></i>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="font-extrabold text-lg tracking-tight text-slate-900">GeoNet</span>
-            <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-semibold">USA Atlas</span>
-          </div>
-          <p class="text-xs text-slate-500 hidden sm:block">Nationwide Inter-Organizational Network</p>
-        </div>
-      </button>
-
-      <!-- Semantic Zoom Level Indicator Breadcrumb -->
-      <div id="zoom-breadcrumbs" class="hidden xl:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-medium">
-        <button onclick="app.flyToUSOverview()" id="bc-level-1" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-white text-slate-900 shadow-sm font-semibold">
-          <i class="fa-solid fa-flag-usa text-red-600"></i>
-          <span>1. US States (Z3–6)</span>
-        </button>
-        <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 mx-1"></i>
-        <button onclick="app.zoomToStage(8)" id="bc-level-2" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
-          <i class="fa-solid fa-Compass text-sky-600"></i>
-          <span id="bc-level-2-text">2. Regional Clusters (Z7–9)</span>
-        </button>
-        <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 mx-1"></i>
-        <button onclick="app.zoomToStage(11)" id="bc-level-3" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
-          <i class="fa-solid fa-circle-nodes text-emerald-600"></i>
-          <span id="bc-level-3-text">3. Town Profile Network (Z10+)</span>
-        </button>
+  <!-- TOP HEADER BAR -->
+  <header class="h-16 bg-white border-b border-slate-200 px-5 flex items-center justify-between z-20 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-sm">
+        <i class="fa-solid fa-diagram-project text-lg"></i>
       </div>
+      <span class="font-extrabold text-xl tracking-tight text-slate-900">GeoNet</span>
+      <span class="text-[11px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full bg-red-50 text-red-600 border border-red-100">
+        USA ATLAS
+      </span>
     </div>
 
-    <!-- Center: Search & Quick Filter -->
-    <div class="flex-1 max-w-md mx-3 hidden md:block relative">
-      <div class="relative">
-        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-        <input
-          id="global-search-input"
-          type="text"
-          oninput="app.handleGlobalSearch(this.value)"
-          onfocus="app.handleGlobalSearch(this.value)"
-          placeholder="Search people, organizations, cities, or states across the USA..."
-          class="w-full pl-9 pr-8 py-2 bg-slate-100 hover:bg-slate-200/60 focus:bg-white rounded-xl text-sm border border-slate-200 focus:border-red-500 focus:outline-none transition"
-        />
-        <button id="clear-search-btn" onclick="app.clearGlobalSearch()" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-          <i class="fa-solid fa-circle-xmark"></i>
-        </button>
-      </div>
-      <!-- Instant Search Dropdown Results -->
-      <div id="global-search-results" class="hidden absolute left-0 right-0 top-12 bg-white rounded-2xl shadow-2xl border border-slate-200 max-h-96 overflow-y-auto z-50 divide-y divide-slate-100"></div>
-    </div>
-
-    <!-- Right: View Switcher & Admin Mode Toggle -->
-    <div class="flex items-center gap-2">
+    <!-- Right Header Controls -->
+    <div class="flex items-center gap-3">
       <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-        <button onclick="app.switchView('map')" id="nav-btn-map" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-white text-slate-900 shadow-sm">
-          <i class="fa-regular fa-map text-red-600"></i>
-          <span class="hidden sm:inline">Interactive Map</span>
+        <button id="btn-view-map" onclick="toggleDirectory(false)" class="px-3 py-1.5 rounded-lg bg-white text-red-600 shadow-sm text-sm font-semibold flex items-center gap-1.5">
+          <i class="fa-regular fa-map"></i>
         </button>
-        <button onclick="app.switchView('directory')" id="nav-btn-directory" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
-          <i class="fa-solid fa-users"></i>
-          <span class="hidden sm:inline">Profiles</span>
-          <span id="total-users-pill" class="px-1.5 py-0.2 bg-slate-200 text-slate-700 rounded-full text-[10px] font-mono">85</span>
-        </button>
-        <button onclick="app.switchView('server')" id="nav-btn-server" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
-          <i class="fa-solid fa-database"></i>
-          <span class="hidden lg:inline">Database / Export</span>
+        <button id="btn-view-dir" onclick="toggleDirectory(true)" class="px-3 py-1.5 rounded-lg text-slate-700 hover:text-slate-900 text-sm font-semibold flex items-center gap-2" title="View Profile Directory">
+          <i class="fa-solid fa-users text-slate-500"></i>
+          <span id="profile-count-badge" class="px-2 py-0.5 text-xs rounded-full bg-slate-200 text-slate-800 font-bold">0</span>
         </button>
       </div>
-
-      <!-- Admin Access Toggle -->
-      <button
-        id="admin-mode-btn"
-        onclick="app.toggleAdminMode()"
-        class="px-3 py-2 rounded-xl text-xs font-semibold border transition flex items-center gap-2 bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-sm"
-        title="Toggle Admin Editing Privileges"
-      >
-        <i id="admin-lock-icon" class="fa-solid fa-user-shield text-emerald-400"></i>
-        <span id="admin-mode-label" class="hidden sm:inline">Admin: ON</span>
+      <button onclick="syncProfiles()" class="w-9 h-9 rounded-full bg-slate-900 text-emerald-400 flex items-center justify-center shadow hover:bg-slate-800 transition" title="Refresh Backend Data">
+        <i class="fa-solid fa-rotate text-xs"></i>
       </button>
     </div>
   </header>
 
-  <!-- ==================== VIEW 1: INTERACTIVE MULTI-ZOOM MAP ==================== -->
-  <main id="view-map" class="flex-1 relative flex overflow-hidden">
-    <!-- Main Leaflet Map Canvas -->
-    <div id="map-container" class="flex-1"></div>
+  <!-- MAIN MAP WORKSPACE -->
+  <div class="relative flex-1 w-full">
+    <div id="map"></div>
 
-    <!-- Top-Left Floating Map Guide & Tour Presets -->
-    <div class="absolute top-4 left-4 z-[400] flex flex-col gap-2.5 max-w-xs sm:max-w-sm pointer-events-auto">
-      <div class="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-3.5 shadow-lg">
-        <div class="flex items-center justify-between gap-2 mb-2">
+    <!-- LEFT FLOATING SIDEBAR CONTROLS -->
+    <div class="absolute top-4 left-4 z-10 w-80 max-w-[calc(100vw-2rem)] flex flex-col gap-3 pointer-events-none">
+      
+      <!-- CARD 1: ZOOM RESOLUTION STAGES -->
+      <div class="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-slate-200/80 pointer-events-auto">
+        <div class="flex items-start justify-between gap-2 mb-2">
           <div class="flex items-center gap-2">
-            <span id="zoom-stage-badge" class="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse"></span>
-            <h2 id="zoom-stage-title" class="text-xs font-bold uppercase tracking-wider text-slate-800">Level 1: United States Overview</h2>
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <h2 id="stage-title" class="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+              LEVEL 1: UNITED STATES OVERVIEW (ZOOM 3–6)
+            </h2>
           </div>
-          <span id="zoom-numeric-badge" class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">Zoom 4</span>
+          <div class="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-center shrink-0">
+            <div class="text-[10px] font-semibold text-slate-500 uppercase">Zoom</div>
+            <div id="zoom-level-indicator" class="text-xs font-extrabold text-slate-800 mono">4</div>
+          </div>
         </div>
-        <p id="zoom-stage-desc" class="text-xs text-slate-600 leading-relaxed">
-          Each state is outlined in white with a red bubble showing total profiles. Zoom in deeper (Zoom 7–9) to see regional town clusters, and Zoom 10+ for individual profile networks.
+
+        <p id="stage-description" class="text-xs text-slate-600 leading-relaxed mb-3">
+           Google Maps light view active. Zoom to <strong>Zoom 7+</strong> for regional clusters or <strong>Zoom 10+</strong> to inspect individual networked profiles.
         </p>
 
-        <!-- Uniform Nationwide Zoom Stage Controls -->
-        <div class="mt-3 pt-2.5 border-t border-slate-100">
-          <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Zoom Resolution Stages</div>
-          <div class="grid grid-cols-3 gap-1.5">
-            <button onclick="app.flyToUSOverview()" class="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-slate-200 text-[11px] font-semibold text-slate-700 transition text-center">
-              1. National (Z4)
-            </button>
-            <button onclick="app.zoomToStage(8)" class="px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-slate-200 text-[11px] font-semibold text-slate-700 transition text-center">
-              2. Clusters (Z8)
-            </button>
-            <button onclick="app.zoomToStage(11)" class="px-2 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-[11px] font-semibold transition text-center shadow-sm">
-              3. Profiles (Z11)
-            </button>
-          </div>
+        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+          ZOOM RESOLUTION STAGES
         </div>
-      </div>
-
-      <!-- Admin Map Action Bar (Visible when Admin is ON) -->
-      <div id="admin-map-toolbar" class="bg-slate-900/95 backdrop-blur-md text-white rounded-2xl p-3 shadow-xl border border-slate-700">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-semibold flex items-center gap-1.5">
-            <i class="fa-solid fa-screwdriver-wrench"></i> Admin Map Tools
-          </span>
-          <span id="admin-tool-hint" class="text-[10px] text-slate-300">Click tool to activate</span>
-        </div>
-        <div class="grid grid-cols-2 gap-1.5">
-          <button
-            id="btn-tool-place-user"
-            onclick="app.setAdminMapTool('add-user')"
-            class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-emerald-600 text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-slate-700"
-          >
-            <i class="fa-solid fa-user-plus"></i>
-            <span>+ Place Profile</span>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button onclick="setZoomStage(4)" id="stage-btn-1" class="py-2 px-2 rounded-xl text-xs font-bold border transition text-center bg-red-600 text-white border-red-600">
+            1. National<br><span class="text-[10px] opacity-80">(Z4)</span>
           </button>
-          <button
-            id="btn-tool-link-nodes"
-            onclick="app.setAdminMapTool('link-nodes')"
-            class="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-red-600 text-xs font-semibold transition flex items-center justify-center gap-1.5 border border-slate-700"
-          >
-            <i class="fa-solid fa-bezier-curve"></i>
-            <span>Link / Unlink 2 Users</span>
+          <button onclick="setZoomStage(8)" id="stage-btn-2" class="py-2 px-2 rounded-xl text-xs font-bold border transition text-center bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">
+            2. Clusters<br><span class="text-[10px] opacity-75">(Z8)</span>
           </button>
-        </div>
-        <div id="admin-active-tool-banner" class="hidden mt-2 p-2 rounded-lg bg-red-500/20 border border-red-400/40 text-[11px] text-red-100 flex items-center justify-between">
-          <span id="admin-active-tool-msg">Click anywhere on the map...</span>
-          <button onclick="app.setAdminMapTool(null)" class="text-xs underline font-semibold ml-2">Cancel</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom-Left Legend & Map Style / Clustering Controls -->
-    <div class="absolute bottom-5 left-4 z-[400] bg-white/95 backdrop-blur-md border border-slate-200 rounded-2xl p-3.5 shadow-lg max-w-xs pointer-events-auto">
-      <div class="text-xs font-bold text-slate-800 mb-2 flex items-center justify-between">
-        <span>Map Layers &amp; Network Style</span>
-        <button onclick="app.resetToDefaultSeed()" class="text-[10px] text-slate-400 hover:text-red-600 font-normal underline" title="Reset sample data to defaults">Reset Demo Data</button>
-      </div>
-
-      <!-- Base Tile Selector -->
-      <div class="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 mb-2.5 text-[11px] font-medium">
-        <button onclick="app.setBaseTileMode('auto')" id="tile-btn-auto" class="py-1 px-2 rounded-lg bg-white text-slate-900 shadow-sm font-semibold">Auto</button>
-        <button onclick="app.setBaseTileMode('clean')" id="tile-btn-clean" class="py-1 px-2 rounded-lg text-slate-600 hover:text-slate-900">White/Clean</button>
-        <button onclick="app.setBaseTileMode('topo')" id="tile-btn-topo" class="py-1 px-2 rounded-lg text-slate-600 hover:text-slate-900">Topo/Towns</button>
-      </div>
-
-      <!-- Town Clustering & Node Appearance Toggles -->
-      <div class="space-y-1.5 text-xs text-slate-700">
-        <label class="flex items-center justify-between cursor-pointer py-0.5">
-          <span class="text-[11px] text-slate-600">Cluster crowded towns (Zoom 10)</span>
-          <input type="checkbox" id="toggle-town-cluster" checked onchange="app.toggleClustering(this.checked)" class="accent-red-600 rounded cursor-pointer" />
-        </label>
-        <label class="flex items-center justify-between cursor-pointer py-0.5">
-          <span class="text-[11px] text-slate-600">Node Style: Classic Sketch vs Photo</span>
-          <select id="node-style-select" onchange="app.setNodeDisplayStyle(this.value)" class="text-[11px] bg-slate-100 border border-slate-200 rounded-lg px-2 py-0.5 font-medium">
-            <option value="modern">Photo + Name Card</option>
-            <option value="classic">Classic Sketch Avatar</option>
-          </select>
-        </label>
-        <label class="flex items-center justify-between cursor-pointer py-0.5">
-          <span class="text-[11px] text-slate-600">Filter by Organization</span>
-          <select id="map-org-filter" onchange="app.setOrgFilter(this.value)" class="text-[11px] bg-slate-100 border border-slate-200 rounded-lg px-2 py-0.5 font-medium max-w-[135px] truncate">
-            <option value="ALL">All Orgs</option>
-          </select>
-        </label>
-      </div>
-
-      <!-- Legend items -->
-      <div class="mt-2.5 pt-2 border-t border-slate-100 grid grid-cols-2 gap-2 text-[11px] text-slate-600">
-        <div class="flex items-center gap-1.5">
-          <span class="w-4 h-0.5 bg-red-600 inline-block"></span>
-          <span>Inter-Org Link</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-          <span class="w-4 h-0.5 bg-red-500 border-b border-dashed border-red-700 inline-block"></span>
-          <span>Same-Org Link</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Right Collapsible District / Area Inspector Drawer -->
-    <div id="map-side-panel" class="hidden lg:flex flex-col w-80 bg-white border-l border-slate-200 z-[400] shadow-lg">
-      <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/60">
-        <div>
-          <span class="text-[10px] font-mono uppercase tracking-wider text-red-600 font-bold" id="panel-region-code">UNITED STATES ATLAS</span>
-          <h3 class="text-sm font-bold text-slate-900" id="panel-region-title">Active Region Summary</h3>
-        </div>
-        <button onclick="app.openCreateUserModal()" id="panel-add-user-btn" class="px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition flex items-center gap-1 shadow-sm">
-          <i class="fa-solid fa-plus"></i> Add User
-        </button>
-      </div>
-
-      <!-- Quick Stats Row -->
-      <div class="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200 bg-white text-center py-2.5">
-        <div>
-          <div class="text-base font-extrabold text-slate-900" id="stat-visible-users">124</div>
-          <div class="text-[10px] text-slate-500 uppercase font-medium">Profiles</div>
-        </div>
-        <div>
-          <div class="text-base font-extrabold text-red-600" id="stat-visible-links">96</div>
-          <div class="text-[10px] text-slate-500 uppercase font-medium">Connections</div>
-        </div>
-        <div>
-          <div class="text-base font-extrabold text-slate-900" id="stat-visible-orgs">6</div>
-          <div class="text-[10px] text-slate-500 uppercase font-medium">Orgs</div>
-        </div>
-      </div>
-
-      <!-- Dynamic List of States / Clusters / Local Profiles in current view -->
-      <div id="panel-list-container" class="flex-1 overflow-y-auto p-3 space-y-2"></div>
-    </div>
-  </main>
-
-  <!-- ==================== VIEW 2: USER PROFILE SUBPAGE (Matches user page ref.png) ==================== -->
-  <section id="view-profile" class="hidden flex-1 bg-slate-50 overflow-y-auto">
-    <!-- Top Contextual Subpage Navigation Bar -->
-    <div class="bg-white border-b border-slate-200 px-4 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30">
-      <div class="flex items-center gap-2 text-sm">
-        <button onclick="app.returnToMapAtCurrentUser()" class="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-2 transition shadow-sm">
-          <i class="fa-solid fa-arrow-left"></i>
-          <span>Back to Map at <span id="profile-back-town">Town</span></span>
-        </button>
-        <span class="text-slate-300">|</span>
-        <button onclick="app.flyToStateFromProfile()" class="text-xs font-medium text-slate-600 hover:text-red-600 transition" id="profile-breadcrumb-state">
-          State: NY
-        </button>
-        <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
-        <button onclick="app.returnToMapAtCurrentUser()" class="text-xs font-mono font-semibold text-red-600 hover:underline" id="profile-breadcrumb-town">
-          Town: New York City
-        </button>
-      </div>
-
-      <!-- Admin Profile Controls -->
-      <div id="profile-admin-actions" class="flex items-center gap-2">
-        <button onclick="app.openEditCurrentProfileModal()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold border border-slate-300 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-pen-to-square text-slate-600"></i>
-          <span>Edit Profile Info</span>
-        </button>
-        <button onclick="app.openAddCustomTabModal()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold border border-slate-300 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-folder-plus text-emerald-600"></i>
-          <span>+ Add Custom Tab</span>
-        </button>
-        <button onclick="app.deleteCurrentProfile()" class="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold border border-red-200 transition flex items-center gap-1.5">
-          <i class="fa-solid fa-trash-can"></i>
-          <span>Delete</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Main Wireframe Layout Container (Matches user page ref.png: Left Avatar + Info Column, Right Tabbed Container) -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div class="flex flex-col lg:flex-row gap-8 items-start">
-
-        <!-- LEFT COLUMN: Picture Box on top + Rounded Info Column Below (Exact match to user page ref.png) -->
-        <aside class="w-full lg:w-72 shrink-0 flex flex-col gap-4">
-          <!-- Rounded Square Picture Box -->
-          <div class="bg-white p-3 rounded-[28px] border-[3px] border-slate-900 shadow-md relative group">
-            <div class="aspect-square w-full rounded-[20px] overflow-hidden bg-slate-100 relative">
-              <img
-                id="profile-avatar-img"
-                src=""
-                alt="User Profile Picture"
-                class="w-full h-full object-cover"
-                onerror="this.src='https://placehold.co/400x400/f97316/ffffff?text=Profile'"
-              />
-              <div class="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-sm text-white text-[11px] font-mono font-semibold flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span id="profile-state-pill">NY</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Rounded Column Box with Rank, Name, Age, Position, Org -->
-          <div class="bg-white rounded-[28px] border-2 border-slate-300 p-6 shadow-sm space-y-4">
-            <!-- RANK: Colored 0-100 Gradient Bar with Upright Pin Marker (Exact match to image_4f4d7e.png) -->
-            <div>
-              <div class="flex items-center justify-between">
-                <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Rank:</div>
-                <span id="profile-rank-Value-badge" class="text-[11px] font-mono font-bold text-slate-500" title="Rank Score (0 to 100)">44 / 100</span>
-              </div>
-              <div class="mt-7 mb-1 relative select-none">
-                <!-- Gradient Bar -->
-                <div class="rank-gradient-bar">
-                  <!-- Upright Hand-Drawn Style Black Pin Marker positioned along 0-100% -->
-                  <div id="profile-rank-pin" class="rank-pin-marker" style="left: 44%;">
-                    <span id="profile-rank-pin-tooltip" class="rank-pin-tooltip">Rank: 44</span>
-                    <svg width="24" height="30" viewBox="0 0 24 30" fill="none" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-sm">
-                      <!-- Teardrop loop + vertical stem touching the top border of the bar (matches image_4f4d7e.png) -->
-                      <path d="M12 21 C12 21 19 14.5 19 9 C19 4.8 15.8 2 12 2 C8.2 2 5 4.8 5 9 C5 14.5 12 21 12 21 Z" fill="#ffffff" stroke="#0f172a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-                      <line x1="12" y1="21" x2="12" y2="29" stroke="#0f172a" stroke-width="2.8" stroke-linecap="round"/>
-                    </svg>
-                  </div>
-                </div>
-                <!-- Only 0 and 100 displayed at the ends -->
-                <div class="flex items-center justify-between text-[10px] font-mono font-bold text-slate-400 mt-1 px-0.5">
-                  <span>0</span>
-                  <span>100</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="border-t border-slate-100 pt-3">
-              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Name:</div>
-              <div id="profile-field-name" class="text-lg font-extrabold text-slate-900 mt-0.5">Lucas Reyes</div>
-            </div>
-
-            <div class="border-t border-slate-100 pt-3">
-              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Age:</div>
-              <div id="profile-field-age" class="text-sm font-semibold text-slate-800 mt-0.5">42</div>
-            </div>
-
-            <div class="border-t border-slate-100 pt-3">
-              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Position:</div>
-              <div id="profile-field-position" class="text-sm font-semibold text-slate-800 mt-0.5">Regional Director</div>
-            </div>
-
-            <div class="border-t border-slate-100 pt-3">
-              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Org:</div>
-              <div class="mt-1">
-                <span id="profile-field-org" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 border border-red-200">
-                  Apex Civic Network
-                </span>
-              </div>
-            </div>
-
-            <div class="border-t border-slate-100 pt-3">
-              <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Operating Location:</div>
-              <div id="profile-field-location" class="text-xs font-medium text-slate-700 mt-1 flex items-center gap-1.5">
-                <i class="fa-solid fa-location-dot text-red-600"></i>
-                <span>Austin, TX</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <!-- RIGHT MAIN AREA: Folder Tabs + Content Frame (Exact match to user page ref.png) -->
-        <div class="flex-1 w-full min-w-0">
-          <!-- Folder Tabs Bar -->
-          <div id="profile-tabs-header" class="flex flex-wrap items-end pl-2 border-b-2 border-slate-700">
-            <!-- Dynamically rendered tabs: Summary, Content, Video, Network, + Custom Tabs -->
-          </div>
-
-          <!-- Tab Content Box -->
-          <div id="profile-tab-panel" class="bg-white border-2 border-t-0 border-slate-700 rounded-b-2xl rounded-tr-2xl p-6 lg:p-8 shadow-sm min-h-[520px]">
-            <!-- Dynamic Tab Content injected here -->
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- ==================== VIEW 3: FULL DIRECTORY & FILTERABLE ROSTER ==================== -->
-  <section id="view-directory" class="hidden flex-1 bg-slate-50 overflow-y-auto p-4 lg:p-8">
-    <div class="max-w-7xl mx-auto">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 class="text-2xl font-extrabold text-slate-900">National Member &amp; Profile Directory</h1>
-          <p class="text-sm text-slate-600">Browse all user profiles across states, towns, and organizations.</p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <select id="dir-state-filter" onchange="app.renderDirectory()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold">
-            <option value="ALL">All States</option>
-          </select>
-          <select id="dir-org-filter" onchange="app.renderDirectory()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold">
-            <option value="ALL">All Organizations</option>
-          </select>
-          <button onclick="app.openCreateUserModal()" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
-            <i class="fa-solid fa-user-plus"></i> Add New Profile
+          <button onclick="setZoomStage(11)" id="stage-btn-3" class="py-2 px-2 rounded-xl text-xs font-bold border transition text-center bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">
+            3. Profiles<br><span class="text-[10px] opacity-75">(Z11)</span>
           </button>
         </div>
       </div>
 
-      <div id="directory-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
-    </div>
-  </section>
-
-  <!-- ==================== VIEW 4: ADMIN CONSOLE & PRODUCTION SERVER EXPORT ==================== -->
-  <section id="view-server" class="hidden flex-1 bg-slate-50 overflow-y-auto p-4 lg:p-8">
-    <div class="max-w-5xl mx-auto space-y-6">
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200">
-          <div>
-            <span class="text-xs font-mono uppercase tracking-wider text-red-600 font-bold">Production Server &amp; Admin Management</span>
-            <h1 class="text-2xl font-extrabold text-slate-900 mt-1">Database, Admin Access Control &amp; JSON Export</h1>
-            <p class="text-sm text-slate-600 mt-1">
-              Manage designated administrators, export or import the complete JSON database of profiles &amp; inter-organizational connections, and prepare for deployment.
-            </p>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button onclick="app.exportDatabaseJSON()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-2 shadow-sm">
-              <i class="fa-solid fa-download"></i> Export JSON
-            </button>
-            <label class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold flex items-center gap-2 shadow-sm cursor-pointer">
-              <i class="fa-solid fa-upload"></i> Import JSON
-              <input type="file" accept=".json" onchange="app.importDatabaseJSON(event)" class="hidden" />
-            </label>
-          </div>
+      <!-- CARD 2: MAP LAYERS & NETWORK STYLE -->
+      <div class="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-slate-200/80 pointer-events-auto">
+        <div class="flex items-center justify-between mb-2.5">
+          <h3 class="text-xs font-extrabold text-slate-900">Map Layers & Network Style</h3>
+          <span id="sync-status" class="text-[10px] font-medium text-emerald-600">Live Backend</span>
         </div>
 
-        <!-- Designated Admins List -->
-        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
-            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-2">
-              <i class="fa-solid fa-user-lock text-red-600"></i> Designated Administrators
-            </h3>
-            <p class="text-xs text-slate-600 mb-3">
-              Only specified administrators can add/remove user profiles, draw organizational connection lines, or upload videos/content.
-            </p>
-            <div id="admin-list-container" class="space-y-2 mb-3"></div>
-            <div class="flex gap-2">
-              <input id="new-admin-email" type="text" placeholder="Add admin email or username..." class="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs bg-white" />
-              <button onclick="app.addAdminUser()" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold">Add Admin</button>
-            </div>
-          </div>
-
-          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
-            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2 mb-2">
-              <i class="fa-solid fa-server text-emerald-600"></i> Server Deployment Architecture
-            </h3>
-            <ul class="text-xs text-slate-600 space-y-2 leading-relaxed">
-              <li><i class="fa-solid fa-check text-emerald-600 mr-1.5"></i> <strong>Self-Contained Frontend:</strong> Ready to host on Nginx, Apache, Vercel, AWS S3, or Node/Express.</li>
-              <li><i class="fa-solid fa-check text-emerald-600 mr-1.5"></i> <strong>Geospatial Engine:</strong> Uses Leaflet.js with multi-level vector overlays (US States &rarr; Regional Clusters &rarr; Local Town Network).</li>
-              <li><i class="fa-solid fa-check text-emerald-600 mr-1.5"></i> <strong>Dynamic Aggregation:</strong> State and regional red count bubbles automatically recalculate whenever profiles are added or moved.</li>
-            </ul>
-          </div>
+        <!-- Map Tile Selector (Google Maps Light Default) -->
+        <div class="grid grid-cols-3 bg-slate-100 p-1 rounded-xl border border-slate-200 mb-3 text-xs font-semibold">
+          <button onclick="switchBaseMap('googleLight')" id="layer-googleLight" class="py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition">
+            Google Light
+          </button>
+          <button onclick="switchBaseMap('googleTerrain')" id="layer-googleTerrain" class="py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
+            Terrain
+          </button>
+          <button onclick="switchBaseMap('cleanLight')" id="layer-cleanLight" class="py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
+            Minimal
+          </button>
         </div>
 
-        <!-- Live JSON Payload Preview -->
-        <div class="mt-6">
-          <div class="flex items-center justify-between mb-2">
-            <label class="text-xs font-mono font-bold uppercase text-slate-600">Live Database JSON State (Profiles, Links &amp; Custom Tabs)</label>
-            <button onclick="app.copyDatabaseJSON()" class="text-xs font-semibold text-red-600 hover:underline flex items-center gap-1">
-              <i class="fa-regular fa-copy"></i> Copy JSON to Clipboard
-            </button>
+        <!-- Cluster Toggle -->
+        <label class="flex items-center justify-between text-xs text-slate-700 font-medium mb-2.5 cursor-pointer">
+          <span>Cluster crowded towns (Zoom &lt; 10)</span>
+          <input type="checkbox" id="toggle-clustering" checked onchange="renderNetwork()" class="w-4 h-4 accent-red-600 rounded cursor-pointer" />
+        </label>
+
+        <!-- Node Style Selector -->
+        <div class="flex items-center justify-between gap-2 mb-2.5">
+          <label class="text-xs text-slate-600 font-medium">Node Style:</label>
+          <select id="select-node-style" onchange="renderNetwork()" class="text-xs font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none">
+            <option value="card">Photo + Name Card</option>
+            <option value="pin">Avatar Pin Only</option>
+          </select>
+        </div>
+
+        <!-- Organization Filter -->
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <label class="text-xs text-slate-600 font-medium">Filter by Organization:</label>
+          <select id="select-org-filter" onchange="renderNetwork()" class="text-xs font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none max-w-[155px] truncate">
+            <option value="ALL">All Orgs (0)</option>
+          </select>
+        </div>
+
+        <!-- Link Legend -->
+        <div class="pt-2.5 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-600 font-medium">
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-0.5 bg-red-600 inline-block"></span>
+            <span>Inter-Org Link</span>
           </div>
-          <textarea id="json-preview-textarea" readonly class="w-full h-64 font-mono text-xs bg-slate-900 text-emerald-300 p-4 rounded-xl border border-slate-700 focus:outline-none"></textarea>
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-0.5 border-b-2 border-dashed border-red-500 inline-block"></span>
+            <span>Same-Org Link</span>
+          </div>
         </div>
       </div>
     </div>
-  </section>
 
-  <!-- ==================== MODAL: ADD / EDIT USER PROFILE ==================== -->
-  <div id="user-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-2xl w-full border border-slate-200 shadow-2xl overflow-hidden my-8">
-      <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
-        <h3 id="user-modal-title" class="text-base font-bold flex items-center gap-2">
-          <i class="fa-solid fa-user-plus text-red-400"></i>
-          <span>Add / Edit Network Profile</span>
-        </h3>
-        <button onclick="app.closeUserModal()" class="text-slate-400 hover:text-white">
-          <i class="fa-solid fa-xmark text-lg"></i>
+    <!-- PROFILE INSPECTOR MODAL / CARD (Right Side) -->
+    <div id="profile-inspector" class="hidden absolute top-4 right-4 z-20 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-5">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div class="flex items-center gap-3">
+          <img id="inspector-photo" src="" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2 border-red-500" />
+          <div>
+            <h4 id="inspector-name" class="font-bold text-slate-900 text-base leading-tight"></h4>
+            <span id="inspector-org" class="inline-block mt-0.5 text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full"></span>
+          </div>
+        </div>
+        <button onclick="closeInspector()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
+      <p id="inspector-bio" class="text-xs text-slate-600 leading-relaxed mb-3"></p>
+      <div id="inspector-meta" class="space-y-1 text-xs border-t border-slate-100 pt-2.5 mb-3"></div>
+      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Network Connections</div>
+      <div id="inspector-connections" class="flex flex-wrap gap-1.5"></div>
+    </div>
 
-      <form id="user-form" onsubmit="app.saveUserForm(event)" class="p-6 space-y-4 max-h-[82vh] overflow-y-auto">
-        <input type="hidden" id="form-user-id" />
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Full Name *</label>
-            <input id="form-name" type="text" required placeholder="e.g. Lucas Reyes" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
-          </div>
-          <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-            <div class="flex items-center justify-between mb-1">
-              <label class="block text-xs font-bold uppercase text-slate-600">Rank (0 to 100 Pin) *</label>
-              <span id="form-rank-display" class="text-xs font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200">44 / 100</span>
-            </div>
-            <input
-              id="form-rank"
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-              value="44"
-              oninput="app.updateFormRankPreview(this.value)"
-              class="w-full accent-slate-900 cursor-pointer"
-            />
-            <div class="mt-4 relative">
-              <div class="rank-gradient-bar h-4">
-                <div id="form-rank-pin-preview" class="rank-pin-marker" style="left: 44%; top: -22px;">
-                  <svg width="18" height="23" viewBox="0 0 24 30" fill="none">
-                    <path d="M12 21 C12 21 19 14.5 19 9 C19 4.8 15.8 2 12 2 C8.2 2 5 4.8 5 9 C5 14.5 12 21 12 21 Z" fill="#ffffff" stroke="#0f172a" stroke-width="2.8"/>
-                    <line x1="12" y1="21" x2="12" y2="29" stroke="#0f172a" stroke-width="3"/>
-                  </svg>
-                </div>
-              </div>
-              <div class="flex justify-between text-[9px] font-mono font-bold text-slate-400 mt-0.5">
-                <span>0 (Green)</span>
-                <span>50 (Yellow)</span>
-                <span>100 (Red)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Age *</label>
-            <input id="form-age" type="number" min="18" max="100" required placeholder="38" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Position / Title *</label>
-            <input id="form-position" type="text" required placeholder="e.g. Field Coordinator" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Organization (Org) *</label>
-            <input id="form-org" type="text" required placeholder="e.g. Sierra Logistics" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">State (2-Letter) *</label>
-            <select id="form-state" onchange="app.handleFormStateChange(this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white"></select>
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Operating Town / City *</label>
-            <input id="form-town" type="text" required placeholder="e.g. Austin" class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm bg-white" />
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Latitude *</label>
-            <input id="form-lat" type="number" step="any" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono" />
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Longitude *</label>
-            <input id="form-lng" type="number" step="any" required class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm font-mono" />
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Profile Picture URL</label>
-          <input id="form-avatar" type="url" placeholder="https://..." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm" />
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Summary Biography</label>
-          <textarea id="form-bio" rows="3" placeholder="Describe this person's background, responsibilities, and organizational role..." class="w-full px-3 py-2 rounded-xl border border-slate-300 text-sm"></textarea>
-        </div>
-
-        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
-          <button type="button" onclick="app.closeUserModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100">Cancel</button>
-          <button type="submit" class="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shadow-sm">Save Profile</button>
-        </div>
-      </form>
+    <!-- DIRECTORY SLIDE-OVER DRAWER -->
+    <div id="directory-drawer" class="hidden absolute inset-y-0 right-0 z-20 w-80 bg-white border-l border-slate-200 shadow-2xl flex flex-col">
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="font-bold text-slate-900 text-sm">Active Map Profiles</h3>
+        <button onclick="toggleDirectory(false)" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-3 border-b border-slate-100">
+        <input id="dir-search" type="text" oninput="renderDirectoryList()" placeholder="Search name or organization..." class="w-full text-xs px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 outline-none focus:border-red-500" />
+      </div>
+      <div id="directory-list" class="flex-1 overflow-y-auto p-3 space-y-2"></div>
     </div>
   </div>
 
-  <!-- ==================== TOAST NOTIFICATION ==================== -->
-  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-  <!-- ==================== APPLICATION LOGIC ==================== -->
   <script>
-    /*************************************************************************
-     * 1. GEOSPATIAL REFERENCE DATA: ALL 50 UNITED STATES
-     * Uniform centroids and metadata for every state across the USA.
-     *************************************************************************/
-    const US_STATES_META = {
-      AL: { name: 'Alabama', lat: 32.806671, lng: -86.791130 },
-      AK: { name: 'Alaska', lat: 61.370716, lng: -152.404419 },
-      AZ: { name: 'Arizona', lat: 33.729759, lng: -111.431221 },
-      AR: { name: 'Arkansas', lat: 34.969704, lng: -92.373123 },
-      CA: { name: 'California', lat: 36.7783, lng: -119.4179 },
-      CO: { name: 'Colorado', lat: 39.059811, lng: -105.311104 },
-      CT: { name: 'Connecticut', lat: 41.597782, lng: -72.755371 },
-      DE: { name: 'Delaware', lat: 39.318523, lng: -75.507141 },
-      FL: { name: 'Florida', lat: 27.766279, lng: -81.686783 },
-      GA: { name: 'Georgia', lat: 33.040619, lng: -83.643074 },
-      HI: { name: 'Hawaii', lat: 21.094318, lng: -157.498337 },
-      ID: { name: 'Idaho', lat: 44.240459, lng: -114.478828 },
-      IL: { name: 'Illinois', lat: 40.349457, lng: -88.986137 },
-      IN: { name: 'Indiana', lat: 39.849426, lng: -86.258278 },
-      IA: { name: 'Iowa', lat: 42.011539, lng: -93.210526 },
-      KS: { name: 'Kansas', lat: 38.526600, lng: -96.726486 },
-      KY: { name: 'Kentucky', lat: 37.668140, lng: -84.670067 },
-      LA: { name: 'Louisiana', lat: 31.169546, lng: -91.867805 },
-      ME: { name: 'Maine', lat: 44.693947, lng: -69.381927 },
-      MD: { name: 'Maryland', lat: 39.063946, lng: -76.802101 },
-      MA: { name: 'Massachusetts', lat: 42.230171, lng: -71.530106 },
-      MI: { name: 'Michigan', lat: 43.326618, lng: -84.536095 },
-      MN: { name: 'Minnesota', lat: 45.694454, lng: -93.900192 },
-      MS: { name: 'Mississippi', lat: 32.741646, lng: -89.678696 },
-      MO: { name: 'Missouri', lat: 38.456085, lng: -92.288368 },
-      MT: { name: 'Montana', lat: 46.921925, lng: -110.454353 },
-      NE: { name: 'Nebraska', lat: 41.125370, lng: -98.268082 },
-      NV: { name: 'Nevada', lat: 38.313515, lng: -117.055374 },
-      NH: { name: 'New Hampshire', lat: 43.452492, lng: -71.563896 },
-      NJ: { name: 'New Jersey', lat: 40.298904, lng: -74.521011 },
-      NM: { name: 'New Mexico', lat: 34.840515, lng: -106.248482 },
-      NY: { name: 'New York', lat: 42.9538, lng: -75.5268 },
-      NC: { name: 'North Carolina', lat: 35.630066, lng: -79.806419 },
-      ND: { name: 'North Dakota', lat: 47.528912, lng: -99.784012 },
-      OH: { name: 'Ohio', lat: 40.388783, lng: -82.764915 },
-      OK: { name: 'Oklahoma', lat: 35.565342, lng: -96.928917 },
-      OR: { name: 'Oregon', lat: 44.572021, lng: -122.070938 },
-      PA: { name: 'Pennsylvania', lat: 40.590752, lng: -77.209755 },
-      RI: { name: 'Rhode Island', lat: 41.680893, lng: -71.511780 },
-      SC: { name: 'South Carolina', lat: 33.856892, lng: -80.945007 },
-      SD: { name: 'South Dakota', lat: 44.299782, lng: -99.438828 },
-      TN: { name: 'Tennessee', lat: 35.747845, lng: -86.692345 },
-      TX: { name: 'Texas', lat: 31.054487, lng: -97.563461 },
-      UT: { name: 'Utah', lat: 40.150032, lng: -111.862434 },
-      VT: { name: 'Vermont', lat: 44.045876, lng: -72.710686 },
-      VA: { name: 'Virginia', lat: 37.769337, lng: -78.169968 },
-      WA: { name: 'Washington', lat: 47.400902, lng: -121.490494 },
-      WV: { name: 'West Virginia', lat: 38.491226, lng: -80.954453 },
-      WI: { name: 'Wisconsin', lat: 44.268543, lng: -89.616508 },
-      WY: { name: 'Wyoming', lat: 42.755966, lng: -107.302490 }
+    // =========================================================================
+    // 1. MAP INITIALIZATION & GOOGLE MAPS LIGHT TILES
+    // =========================================================================
+    const map = L.map('map', {
+      center: [39.8283, -98.5795],
+      zoom: 4,
+      minZoom: 3,
+      maxZoom: 18,
+      zoomControl: false
+    });
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    const tileLayers = {
+      // Clean Google Maps Light Standard Road Map (No API key watermark)
+      googleLight: L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        attribution: '&copy; Google Maps'
+      }),
+      // Google Maps Terrain with light shading
+      googleTerrain: L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        attribution: '&copy; Google Maps Terrain'
+      }),
+      // Esri World Light Gray Canvas (Ultra-minimal clean background)
+      cleanLight: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 16,
+        attribution: 'Tiles &copy; Esri'
+      })
     };
 
-    /*************************************************************************
-     * 2. UNIFORM NATIONWIDE SEED DATASET
-     * Balanced distribution of user profiles and organic inter-organizational
-     * networks across 18 US states and dozens of cities/towns, with zero
-     * voting districts or state-specific special treatment.
-     *************************************************************************/
-    function buildInitialSeedDatabase() {
-      const users = [];
-      const links = [];
+    let currentLayer = tileLayers.googleLight.addTo(map);
 
-      const orgsPool = [
-        'Apex Civic Network',
-        'Sierra Logistics',
-        'Cascade Resource Group',
-        'Atlantic Grid Collective',
-        'Heartland Meridian Org',
-        'Continental Systems Alliance'
-      ];
+    function switchBaseMap(layerKey) {
+      map.removeLayer(currentLayer);
+      currentLayer = tileLayers[layerKey].addTo(map);
 
-      const rolePool = [
-        'Regional Operations Director',
-        'Field Logistics Lead',
-        'Municipal Network Liaison',
-        'Infrastructure Strategist',
-        'Community Resilience Coordinator',
-        'Inter-Org Communications Lead',
-        'Sector Operations Specialist'
-      ];
-
-      const firstNames = [
-        'Lucas', 'Marcus', 'Elena', 'Devon', 'Clara', 'Julian', 'Hannah', 'Owen',
-        'Victor', 'Nadia', 'Gideon', 'Sienna', 'Arthur', 'Tessa', 'Caleb', 'Miriam',
-        'Liam', 'Olivia', 'Noah', 'Emma', 'Sophia', 'Ethan', 'Ava', 'Mason',
-        'Isabella', 'Logan', 'Mia', 'James', 'Charlotte', 'Benjamin', 'Amelia', 'Elijah'
-      ];
-      const lastNames = [
-        'Reyes', 'Vance', 'Rostova', 'Thorne', 'Lindqvist', 'Mercer', 'Sterling', 'Kaelen',
-        'Shaw', 'Morales', 'Pendelton', 'Halvorsen', 'Chen', 'Keller', 'Sato', 'Navarro',
-        'Bauer', 'Castillo', 'Hollis', 'Lindholm', 'Faulkner', 'Patel', 'Russo', 'Walsh',
-        'Snyder', 'Briggs', 'Sinclair', 'Avery', 'Kowalski', 'Dominguez', 'Alvarez', 'brook'
-      ];
-
-      // Nationwide hubs across the United States (18 states, 42 cities/towns)
-      const nationalHubs = [
-        // New York (12)
-        { state: 'NY', town: 'New York City', lat: 40.7580, lng: -73.9855, count: 5 },
-        { state: 'NY', town: 'Albany', lat: 42.6526, lng: -73.7562, count: 4 },
-        { state: 'NY', town: 'Buffalo', lat: 42.8864, lng: -78.8784, count: 3 },
-        // Texas (12)
-        { state: 'TX', town: 'Austin', lat: 30.2672, lng: -97.7431, count: 5 },
-        { state: 'TX', town: 'Dallas', lat: 32.7767, lng: -96.7970, count: 4 },
-        { state: 'TX', town: 'Houston', lat: 29.7604, lng: -95.3698, count: 3 },
-        // California (12)
-        { state: 'CA', town: 'San Francisco', lat: 37.7749, lng: -122.4194, count: 4 },
-        { state: 'CA', town: 'Redding', lat: 40.5865, lng: -122.3917, count: 4 },
-        { state: 'CA', town: 'Los Angeles', lat: 34.0522, lng: -118.2437, count: 4 },
-        // Florida (9)
-        { state: 'FL', town: 'Miami', lat: 25.7617, lng: -80.1918, count: 4 },
-        { state: 'FL', town: 'Orlando', lat: 28.5383, lng: -81.3792, count: 3 },
-        { state: 'FL', town: 'Tampa', lat: 27.9506, lng: -82.4572, count: 2 },
-        // Illinois (8)
-        { state: 'IL', town: 'Chicago', lat: 41.8781, lng: -87.6298, count: 5 },
-        { state: 'IL', town: 'Springfield', lat: 39.7817, lng: -89.6501, count: 3 },
-        // Washington (8)
-        { state: 'WA', town: 'Seattle', lat: 47.6062, lng: -122.3321, count: 5 },
-        { state: 'WA', town: 'Spokane', lat: 47.6588, lng: -117.4260, count: 3 },
-        // Massachusetts (7)
-        { state: 'MA', town: 'Boston', lat: 42.3601, lng: -71.0589, count: 4 },
-        { state: 'MA', town: 'Worcester', lat: 42.2626, lng: -71.8023, count: 3 },
-        // Colorado (7)
-        { state: 'CO', town: 'Denver', lat: 39.7392, lng: -104.9903, count: 4 },
-        { state: 'CO', town: 'Boulder', lat: 40.0150, lng: -105.2705, count: 3 },
-        // Georgia (7)
-        { state: 'GA', town: 'Atlanta', lat: 33.7490, lng: -84.3880, count: 4 },
-        { state: 'GA', town: 'Savannah', lat: 32.0809, lng: -81.0912, count: 3 },
-        // Virginia (6)
-        { state: 'VA', town: 'Arlington', lat: 38.8799, lng: -77.1067, count: 3 },
-        { state: 'VA', town: 'Richmond', lat: 37.5407, lng: -77.4360, count: 3 },
-        // Pennsylvania (6)
-        { state: 'PA', town: 'Philadelphia', lat: 39.9526, lng: -75.1652, count: 3 },
-        { state: 'PA', town: 'Pittsburgh', lat: 40.4406, lng: -79.9959, count: 3 },
-        // Ohio (6)
-        { state: 'OH', town: 'Columbus', lat: 39.9612, lng: -82.9988, count: 3 },
-        { state: 'OH', town: 'Cleveland', lat: 41.4993, lng: -81.6944, count: 3 },
-        // North Carolina (5)
-        { state: 'NC', town: 'Charlotte', lat: 35.2271, lng: -80.8431, count: 3 },
-        { state: 'NC', town: 'Raleigh', lat: 35.7796, lng: -78.6382, count: 2 },
-        // New Jersey (5)
-        { state: 'NJ', town: 'Allendale', lat: 41.0315, lng: -74.1290, count: 3 },
-        { state: 'NJ', town: 'Princeton', lat: 40.3573, lng: -74.6672, count: 2 },
-        // Michigan (4)
-        { state: 'MI', town: 'Detroit', lat: 42.3314, lng: -83.0458, count: 2 },
-        { state: 'MI', town: 'Ann Arbor', lat: 42.2808, lng: -83.7430, count: 2 },
-        // Arizona (4)
-        { state: 'AZ', town: 'Phoenix', lat: 33.4484, lng: -112.0740, count: 2 },
-        { state: 'AZ', town: 'Tucson', lat: 32.2226, lng: -110.9747, count: 2 },
-        // Tennessee (4)
-        { state: 'TN', town: 'Nashville', lat: 36.1627, lng: -86.7816, count: 2 },
-        { state: 'TN', town: 'Knoxville', lat: 35.9606, lng: -83.9207, count: 2 },
-        // Minnesota (4)
-        { state: 'MN', town: 'Minneapolis', lat: 44.9778, lng: -93.2650, count: 4 }
-      ];
-
-      let counter = 1;
-      const stateFirstNodeMap = {};
-
-      nationalHubs.forEach((hub, hubIdx) => {
-        const hubIds = [];
-        for (let k = 0; k < hub.count; k++) {
-          const idx = counter++;
-          const id = `u-${idx}`;
-          // Organic local spread around the town so individual nodes form a clear local network when zoomed in
-          const angle = (k / hub.count) * Math.PI * 2 + (hubIdx * 0.4);
-          const radius = 0.018 + (k % 3) * 0.014;
-          const lat = +(hub.lat + Math.sin(angle) * radius).toFixed(4);
-          const lng = +(hub.lng + Math.cos(angle) * radius).toFixed(4);
-
-          const fName = idx === 1 ? 'Lucas' : firstNames[(idx * 3 + k) % firstNames.length];
-          const lName = idx === 1 ? 'Reyes' : lastNames[(idx * 5 + hubIdx) % lastNames.length];
-          const fullName = `${fName} ${lName.charAt(0).toUpperCase() + lName.slice(1)}`;
-          const org = orgsPool[(idx + k) % orgsPool.length];
-          const position = rolePool[(idx + hubIdx) % rolePool.length];
-          const rank = idx === 1 ? 44 : (14 + ((idx * 19 + k * 11) % 82));
-
-          users.push({
-            id,
-            name: fullName,
-            rank,
-            age: 27 + ((idx * 7) % 26),
-            position,
-            org,
-            state: hub.state,
-            town: hub.town,
-            lat,
-            lng,
-            avatar: `https://i.pravatar.cc/300?img=${(idx % 68) + 1}`,
-            bio: `Operates out of ${hub.town}, ${hub.state} as ${position} for ${org}. Coordinates local municipal resilience and inter-organizational partnerships across the ${US_STATES_META[hub.state]?.name || hub.state} region.`
-          });
-
-          hubIds.push(id);
-          if (!stateFirstNodeMap[hub.state]) {
-            stateFirstNodeMap[hub.state] = [];
-          }
-          if (k === 0) {
-            stateFirstNodeMap[hub.state].push(id);
-          }
-
-          // Connect nodes organically within the same town/hub
-          if (k > 0) {
-            links.push({
-              id: `link-local-${idx}`,
-              source: hubIds[k - 1],
-              target: id,
-              label: `${hub.town} Local Network Link`
-            });
-          }
-          if (k >= 2 && k === hub.count - 1) {
-            links.push({
-              id: `link-ring-${idx}`,
-              source: hubIds[0],
-              target: id,
-              label: `${hub.town} Inter-Org Loop`
-            });
-          }
+      ['googleLight', 'googleTerrain', 'cleanLight'].forEach(key => {
+        const btn = document.getElementById(`layer-${key}`);
+        if (key === layerKey) {
+          btn.className = 'py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition';
+        } else {
+          btn.className = 'py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
         }
       });
-
-      // Connect hubs within the same state so regional networks connect towns across each state
-      Object.entries(stateFirstNodeMap).forEach(([st, anchorIds]) => {
-        for (let i = 1; i < anchorIds.length; i++) {
-          links.push({
-            id: `link-state-${st}-${i}`,
-            source: anchorIds[i - 1],
-            target: anchorIds[i],
-            label: `${st} Inter-City Trunk Line`
-          });
-        }
-      });
-
-      // Addrich initial Content, Video, and Custom Tabs to every user so User Profile pages feel complete
-      users.forEach((u) => {
-        u.contents = [
-          {
-            id: `c-${u.id}-1`,
-            title: `${u.town}, ${u.state} Regional Operations Briefing`,
-            date: 'Oct 2026',
-            category: 'Operational Brief',
-            body: `Quarterly situational report compiled by ${u.name} (${u.position}, ${u.org}). Details local coordination in ${u.town}, ${u.state} and resource sharing with partner organizations.`
-          },
-          {
-            id: `c-${u.id}-2`,
-            title: `Inter-Organizational Charter: ${u.org}`,
-            date: 'Sep 2026',
-            category: 'Documentation',
-            body: `Standard operating procedures and communication protocols linking ${u.town}, ${u.state} field nodes with national partner chapters.`
-          }
-        ];
-        u.videos = [
-          {
-            id: `v-${u.id}-1`,
-            title: `${u.town}, ${u.state} Network Overview — ${u.name}`,
-            duration: '02:45',
-            date: 'Oct 2026',
-            url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-            caption: `Recorded field briefing from ${u.name} covering ${u.org} initiatives in ${u.town}, ${u.state}.`
-          }
-        ];
-        u.customTabs = [];
-      });
-
-      return {
-        users,
-        links,
-        admins: ['admin@geonet.org', 'director.reyes@geonet.org', 'owner@geonet.org']
-      };
     }
 
-    /*************************************************************************
-     * 3. MAIN APPLICATION CONTROLLER
-     *************************************************************************/
-    const app = {
-      db: null,
-      map: null,
-      tileLayers: {},
-      baseTileMode: 'auto', // 'auto' | 'clean' | 'topo'
-      activeTileKey: null,
-      usStatesGeoJson: null,
+    // Layer groups for markers and network lines
+    const linksLayerGroup = L.layerGroup().addTo(map);
+    const nodesLayerGroup = L.layerGroup().addTo(map);
 
-      // Map Layer Groups for the 3 semantic zoom levels (States -> Regional Clusters -> Town Profile Network)
-      layers: {
-        statePolygons: null,
-        stateBubbles: null,
-        regionalClusters: null,
-        networkLines: null,
-        networkNodes: null
-      },
+    // Master array of profiles (Starts 100% empty—no fake profiles!)
+    let PROFILES = [];
 
-      // UI & Filter State
-      currentView: 'map', // 'map' | 'profile' | 'directory' | 'server'
-      isAdmin: true,
-      adminMapTool: null, // null | 'add-user' | 'link-nodes'
-      linkSourceUserId: null,
-      enableClustering: true,
-      nodeDisplayStyle: 'modern', // 'modern' | 'classic'
-      orgFilter: 'ALL',
+    // =========================================================================
+    // 2. MULTI-STAGE ZOOM CONTROLS
+    // =========================================================================
+    function setZoomStage(targetZoom) {
+      map.flyTo(map.getCenter(), targetZoom, { duration: 0.6 });
+    }
 
-      // Current Profile Page State
-      activeProfileId: null,
-      activeProfileTab: 'Summary', // 'Summary' | 'Content' | 'Video' | 'Network' | custom
+    function updateZoomUI() {
+      const z = map.getZoom();
+      document.getElementById('zoom-level-indicator').textContent = z;
 
-      normalizeRankValue(rawRank) {
-        if (typeof rawRank === 'number' && !isNaN(rawRank)) {
-          return Math.max(0, Math.min(100, Math.round(rawRank)));
-        }
-        const parsed = parseInt(rawRank, 10);
-        if (!isNaN(parsed)) {
-          return Math.max(0, Math.min(100, parsed));
-        }
-        return 44;
-      },
+      const b1 = document.getElementById('stage-btn-1');
+      const b2 = document.getElementById('stage-btn-2');
+      const b3 = document.getElementById('stage-btn-3');
+      const title = document.getElementById('stage-title');
 
-      init() {
-        // Load database from localStorage or seed
-        const saved = localStorage.getItem('geonet_usa_atlas_db_v4');
-        if (saved) {
-          try {
-            this.db = JSON.parse(saved);
-            this.db.users.forEach(u => {
-              u.rank = this.normalizeRankValue(u.rank);
-            });
-          } catch (e) {
-            this.db = buildInitialSeedDatabase();
+      const activeClass = 'py-2 px-2 rounded-xl text-xs font-bold border transition text-center bg-red-600 text-white border-red-600';
+      const idleClass = 'py-2 px-2 rounded-xl text-xs font-bold border transition text-center bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
+
+      if (z <= 6) {
+        title.textContent = 'LEVEL 1: UNITED STATES OVERVIEW (ZOOM 3–6)';
+        b1.className = activeClass; b2.className = idleClass; b3.className = idleClass;
+      } else if (z <= 9) {
+        title.textContent = 'LEVEL 2: REGIONAL CLUSTERS (ZOOM 7–9)';
+        b1.className = idleClass; b2.className = activeClass; b3.className = idleClass;
+      } else {
+        title.textContent = 'LEVEL 3: INDIVIDUAL PROFILES (ZOOM 10+)';
+        b1.className = idleClass; b2.className = idleClass; b3.className = activeClass;
+      }
+    }
+
+    map.on('zoomend', () => {
+      updateZoomUI();
+      renderNetwork();
+    });
+
+    // =========================================================================
+    // 3. NETWORK GRAPH & CLUSTERING ENGINE
+    // =========================================================================
+    function getFilteredProfiles() {
+      const selectedOrg = document.getElementById('select-org-filter').value;
+      if (selectedOrg === 'ALL') return PROFILES;
+      return PROFILES.filter(p => (p.organization || 'Unassigned') === selectedOrg);
+    }
+
+    function buildNetworkEdges(profiles) {
+      const edges = [];
+      const seen = new Set();
+
+      for (let i = 0; i < profiles.length; i++) {
+        for (let j = i + 1; j < profiles.length; j++) {
+          const a = profiles[i];
+          const b = profiles[j];
+          const pairKey = [a.id, b.id].sort().join('--');
+          if (seen.has(pairKey)) continue;
+
+          // 1. Check explicit Inter-Org / Direct connections by ID or Name
+          const aConns = (a.connections || []).map(c => String(c).toLowerCase().trim());
+          const bConns = (b.connections || []).map(c => String(c).toLowerCase().trim());
+
+          const isExplicitlyLinked =
+            aConns.includes(String(b.id).toLowerCase()) ||
+            aConns.includes(String(b.name).toLowerCase()) ||
+            bConns.includes(String(a.id).toLowerCase()) ||
+            bConns.includes(String(a.name).toLowerCase());
+
+          // 2. Check Same-Organization automatic link
+          const isSameOrg =
+            a.organization &&
+            b.organization &&
+            a.organization.toLowerCase().trim() === b.organization.toLowerCase().trim() &&
+            a.organization.toLowerCase().trim() !== 'unassigned';
+
+          if (isExplicitlyLinked) {
+            edges.push({ from: a, to: b, type: isSameOrg ? 'same-org' : 'inter-org' });
+            seen.add(pairKey);
+          } else if (isSameOrg) {
+            edges.push({ from: a, to: b, type: 'same-org' });
+            seen.add(pairKey);
           }
-        } else {
-          this.db = buildInitialSeedDatabase();
         }
+      }
+      return edges;
+    }
 
-        this.populateFilterDropdowns();
-        this.initMap();
-        this.loadUSStatesGeoJSON();
-        this.renderAdminList();
-        this.updateTotalUsersPill();
+    function renderNetwork() {
+      linksLayerGroup.clearLayers();
+      nodesLayerGroup.clearLayers();
 
-        // Close search dropdown on outside click
-        document.addEventListener('click', (e) => {
-          const searchBox = document.getElementById('global-search-input');
-          const resultsBox = document.getElementById('global-search-results');
-          if (searchBox && resultsBox && !searchBox.contains(e.target) && !resultsBox.contains(e.target)) {
-            resultsBox.classList.add('hidden');
+      const activeProfiles = getFilteredProfiles();
+      const zoom = map.getZoom();
+      const clusterEnabled = document.getElementById('toggle-clustering').checked;
+      const nodeStyle = document.getElementById('select-node-style').value;
+
+      if (activeProfiles.length === 0) return;
+
+      // Draw Network Connection Lines
+      const edges = buildNetworkEdges(activeProfiles);
+      edges.forEach(edge => {
+        L.polyline(
+          [[edge.from.lat, edge.from.lng], [edge.to.lat, edge.to.lng]],
+          {
+            color: '#ef4444',
+            weight: edge.type === 'inter-org' ? 2.5 : 2,
+            opacity: 0.75,
+            dashArray: edge.type === 'same-org' ? '6, 6' : null
           }
-        });
-      },
+        ).addTo(linksLayerGroup);
+      });
 
-      saveDatabase() {
-        try {
-          localStorage.setItem('geonet_usa_atlas_db_v4', JSON.stringify(this.db));
-        } catch (e) {
-          console.warn('Storage quota notice:', e);
-        }
-        this.updateTotalUsersPill();
-        this.populateFilterDropdowns();
-      },
+      // Cluster mode when zoomed out (Zoom < 10)
+      if (clusterEnabled && zoom < 10) {
+        const gridSize = zoom <= 6 ? 4.5 : 1.2; // Degrees grid cell
+        const buckets = {};
 
-      resetToDefaultSeed() {
-        this.db = buildInitialSeedDatabase();
-        this.saveDatabase();
-        this.refreshMapLayers();
-        this.showToast('Demo database restored to nationwide US profiles across 18 states.', 'info');
-      },
-
-      updateTotalUsersPill() {
-        const pill = document.getElementById('total-users-pill');
-        if (pill) pill.textContent = this.db.users.length;
-      },
-
-      populateFilterDropdowns() {
-        const orgs = Array.from(new Set(this.db.users.map(u => u.org))).sort();
-        const states = Array.from(new Set(this.db.users.map(u => u.state))).sort();
-
-        const mapOrgSel = document.getElementById('map-org-filter');
-        if (mapOrgSel) {
-          const current = mapOrgSel.value || 'ALL';
-          mapOrgSel.innerHTML = `<option value="ALL">All Orgs (${orgs.length})</option>` +
-            orgs.map(o => `<option value="${o}">${o}</option>`).join('');
-          mapOrgSel.value = orgs.includes(current) ? current : 'ALL';
-        }
-
-        const dirOrgSel = document.getElementById('dir-org-filter');
-        if (dirOrgSel) {
-          dirOrgSel.innerHTML = `<option value="ALL">All Organizations</option>` +
-            orgs.map(o => `<option value="${o}">${o}</option>`).join('');
-        }
-
-        const dirStateSel = document.getElementById('dir-state-filter');
-        if (dirStateSel) {
-          dirStateSel.innerHTML = `<option value="ALL">All States</option>` +
-            states.map(s => `<option value="${s}">${s} - ${US_STATES_META[s]?.name || s}</option>`).join('');
-        }
-
-        const formStateSel = document.getElementById('form-state');
-        if (formStateSel && formStateSel.options.length === 0) {
-          formStateSel.innerHTML = Object.keys(US_STATES_META).sort().map(code =>
-            `<option value="${code}">${code} — ${US_STATES_META[code].name}</option>`
-          ).join('');
-        }
-      },
-
-      /***********************************************************************
-       * 4. LEAFLET MULTI-LEVEL SEMANTIC ZOOM MAP ENGINE (NO VOTING DISTRICTS)
-       ***********************************************************************/
-      initMap() {
-        this.map = L.map('map-container', {
-          center: [39.50, -98.35],
-          zoom: 4,
-          minZoom: 3,
-          maxZoom: 16,
-          zoomControl: false,
-          attributionControl: true
+        activeProfiles.forEach(p => {
+          const key = `${Math.round(p.lat / gridSize)}_${Math.round(p.lng / gridSize)}`;
+          if (!buckets[key]) buckets[key] = [];
+          buckets[key].push(p);
         });
 
-        L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+        Object.values(buckets).forEach(group => {
+          const avgLat = group.reduce((sum, p) => sum + p.lat, 0) / group.length;
+          const avgLng = group.reduce((sum, p) => sum + p.lng, 0) / group.length;
 
-        // Clean White Positron Map (Ideal for Level 1 US State outlines)
-        this.tileLayers.clean = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-          attribution: '&copy; OpenStreetMap &copy; CARTO',
-          subdomains: 'abcd',
-          maxZoom: 19
-        });
-
-        // Detailed USGS / Esri World Topographic Map (Shows all US towns, cities, rivers, and terrain at Zoom 7+)
-        this.tileLayers.topo = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-          attribution: 'Tiles &copy; Esri &mdash; USGS, NOAA',
-          maxZoom: 19
-        });
-
-        this.tileLayers.clean.addTo(this.map);
-        this.activeTileKey = 'clean';
-
-        // Initialize Layer Groups
-        this.layers.statePolygons = L.layerGroup().addTo(this.map);
-        this.layers.networkLines = L.layerGroup().addTo(this.map);
-        this.layers.stateBubbles = L.layerGroup().addTo(this.map);
-        this.layers.regionalClusters = L.layerGroup().addTo(this.map);
-        this.layers.networkNodes = L.layerGroup().addTo(this.map);
-
-        // Listen to zoom & move events to trigger semantic zoom transitions
-        this.map.on('zoomend moveend', () => {
-          this.refreshMapLayers();
-        });
-
-        // Handle Admin Map Click (for placing a new user at exact clicked town coordinates)
-        this.map.on('click', (e) => {
-          if (this.isAdmin && this.adminMapTool === 'add-user') {
-            const { lat, lng } = e.latlng;
-            this.setAdminMapTool(null);
-            this.openCreateUserModalWithCoords(lat, lng);
-          }
-        });
-
-        this.refreshMapLayers();
-      },
-
-      async loadUSStatesGeoJSON() {
-        try {
-          const res = await fetch('https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json');
-          if (res.ok) {
-            this.usStatesGeoJson = await res.json();
-            this.refreshMapLayers();
-          }
-        } catch (err) {
-          console.warn('Using built-in state bounds fallback:', err);
-        }
-      },
-
-      setBaseTileMode(mode) {
-        this.baseTileMode = mode;
-        ['auto', 'clean', 'topo'].forEach(k => {
-          const btn = document.getElementById(`tile-btn-${k}`);
-          if (btn) {
-            if (k === mode) {
-              btn.className = 'py-1 px-2 rounded-lg bg-white text-slate-900 shadow-sm font-semibold';
-            } else {
-              btn.className = 'py-1 px-2 rounded-lg text-slate-600 hover:text-slate-900';
-            }
-          }
-        });
-        this.updateTileLayerForZoom(this.map.getZoom());
-      },
-
-      updateTileLayerForZoom(zoom) {
-        let desired = 'clean';
-        if (this.baseTileMode === 'topo') {
-          desired = 'topo';
-        } else if (this.baseTileMode === 'clean') {
-          desired = 'clean';
-        } else {
-          // Auto mode: Clean white state map at National level (<= 6), Topographic town/city map when zoomed in (>= 7)
-          desired = zoom >= 7 ? 'topo' : 'clean';
-        }
-
-        if (desired !== this.activeTileKey) {
-          if (this.activeTileKey && this.tileLayers[this.activeTileKey]) {
-            this.map.removeLayer(this.tileLayers[this.activeTileKey]);
-          }
-          this.tileLayers[desired].addTo(this.map);
-          this.activeTileKey = desired;
-        }
-      },
-
-      getFilteredUsers() {
-        if (this.orgFilter === 'ALL') return this.db.users;
-        return this.db.users.filter(u => u.org === this.orgFilter);
-      },
-
-      /**
-       * Core Semantic Zoom Renderer (Uniform Nationwide Behavior, No Voting Districts):
-       * - Zoom <= 6: Level 1 (US States filled with white + Red State Total Bubbles)
-       * - Zoom 7 - 9: Level 2 (Dynamic Distance-Based Regional / Metro Town Cluster Bubbles)
-       * - Zoom >= 10: Level 3 (Local Towns, Red Inter-Org Network Lines, & Individual Profile Nodes)
-       */
-      refreshMapLayers() {
-        if (!this.map) return;
-        const zoom = this.map.getZoom();
-        this.updateTileLayerForZoom(zoom);
-
-        // Clear all dynamic layers
-        Object.values(this.layers).forEach(layer => layer.clearLayers());
-
-        const zoomBadge = document.getElementById('zoom-numeric-badge');
-        if (zoomBadge) zoomBadge.textContent = `Zoom ${zoom}`;
-
-        this.updateBreadcrumbsAndGuide(zoom);
-
-        if (zoom <= 6) {
-          this.renderLevel1States();
-        } else if (zoom >= 7 && zoom <= 9) {
-          this.renderLevel2RegionalClusters(zoom);
-        } else {
-          this.renderLevel3ProfileNetwork(zoom);
-        }
-
-        this.renderRightSidePanel(zoom);
-      },
-
-      updateBreadcrumbsAndGuide(zoom) {
-        const titleEl = document.getElementById('zoom-stage-title');
-        const descEl = document.getElementById('zoom-stage-desc');
-        const b1 = document.getElementById('bc-level-1');
-        const b2 = document.getElementById('bc-level-2');
-        const b3 = document.getElementById('bc-level-3');
-
-        const inactiveClass = 'px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
-        const activeClass = 'px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-white text-slate-900 shadow-sm font-semibold';
-
-        if (b1 && b2 && b3) {
-          b1.className = zoom <= 6 ? activeClass : inactiveClass;
-          b2.className = (zoom >= 7 && zoom <= 9) ? activeClass : inactiveClass;
-          b3.className = zoom >= 10 ? activeClass : inactiveClass;
-        }
-
-        if (zoom <= 6) {
-          titleEl.textContent = 'Level 1: United States Overview (Zoom 3–6)';
-          descEl.innerHTML = 'Each state is filled with white and outlined in dark slate, with a red bubble showing total user profiles in that state. Click any state or zoom to <strong>Zoom 7+</strong> to see regional clusters.';
-        } else if (zoom >= 7 && zoom <= 9) {
-          titleEl.textContent = 'Level 2: Regional & City Clusters (Zoom 7–9)';
-          descEl.innerHTML = 'State totals break down into dynamic regional &amp; city count circles as you zoom in across any state. Click any circle or zoom to <strong>Zoom 10+</strong> to reveal individual profile networks.';
-        } else {
-          const clusterNotice = (this.enableClustering && zoom === 10)
-            ? 'Crowded cities show a count circle at Zoom 10 — zoom in to Zoom 11+ or click a circle to unpack every individual profile.'
-            : 'Showing individual user profiles in their towns with crimson inter-organizational connection lines. Click any profile to open their full page.';
-          titleEl.textContent = 'Level 3: Town & Profile Network (Zoom 10+)';
-          descEl.innerHTML = clusterNotice;
-        }
-      },
-
-      /* ---------------- LEVEL 1: US STATES + RED BUBBLES (UNIFORM NATIONWIDE) ---------------- */
-      renderLevel1States() {
-        const users = this.getFilteredUsers();
-
-        // 1. Render crisp white-filled US State Polygons with dark borders (matching `main page.png`)
-        if (this.usStatesGeoJson) {
-          L.geoJSON(this.usStatesGeoJson, {
-            style: () => ({
-              fillColor: '#ffffff',
-              fillOpacity: 0.94,
-              color: '#1e293b',
-              weight: 1.8
-            }),
-            onEachFeature: (feature, layer) => {
-              const stateName = feature.properties.name;
-              const stateCode = Object.keys(US_STATES_META).find(k => US_STATES_META[k].name === stateName);
-              layer.on({
-                mouseover: (e) => {
-                  e.target.setStyle({ fillColor: '#fef2f2', weight: 2.5 });
-                },
-                mouseout: (e) => {
-                  e.target.setStyle({ fillColor: '#ffffff', weight: 1.8 });
-                },
-                click: () => {
-                  if (stateCode) {
-                    this.flyToStateOverview(stateCode);
-                  }
-                }
-              });
-            }
-          }).addTo(this.layers.statePolygons);
-        }
-
-        // 2. Group user counts by State
-        const countsByState = {};
-        users.forEach(u => {
-          countsByState[u.state] = (countsByState[u.state] || 0) + 1;
-        });
-
-        // 3. Render State Abbr Labels + Red Count Bubbles uniformly for all states
-        Object.entries(US_STATES_META).forEach(([code, meta]) => {
-          const count = countsByState[code] || 0;
-
-          // State abbreviation label on the white state polygon
-          const stateLabelIcon = L.divIcon({
-            className: 'pointer-events-none',
-            html: `<div class="text-[11px] font-bold text-slate-700 tracking-wider select-none" style="transform:translate(-50%,-50%)">${code}</div>`,
-            iconSize: [30, 20],
-            iconAnchor: [15, 10]
-          });
-          L.marker([meta.lat, meta.lng], { icon: stateLabelIcon, interactive: false }).addTo(this.layers.statePolygons);
-
-          if (count > 0) {
-            const bubbleLat = meta.lat + 0.72;
-            const bubbleLng = meta.lng;
-            const size = count >= 12 ? 40 : count >= 6 ? 35 : 30;
-
-            const bubbleIcon = L.divIcon({
+          if (group.length === 1 && zoom >= 8) {
+            createProfileMarker(group[0], nodeStyle).addTo(nodesLayerGroup);
+          } else {
+            const size = group.length > 9 ? 44 : 38;
+            const icon = L.divIcon({
               className: '',
-              html: `<div class="state-bubble-marker" style="width:${size}px;height:${size}px;" title="${meta.name}: ${count} profiles — Click to zoom in">${count}</div>`,
+              html: `<div class="geonet-cluster-marker" style="width:${size}px;height:${size}px;">${group.length}</div>`,
               iconSize: [size, size],
               iconAnchor: [size / 2, size / 2]
             });
 
-            const marker = L.marker([bubbleLat, bubbleLng], { icon: bubbleIcon });
-            marker.on('click', () => this.flyToStateOverview(code));
-            marker.addTo(this.layers.stateBubbles);
-          }
-        });
-      },
-
-      /* ---------------- LEVEL 2: DYNAMIC DISTANCE-BASED REGIONAL CLUSTERS (ZOOM 7–9) ---------------- */
-      clusterUsersByDistance(users, radiusDegrees) {
-        const clusters = [];
-        const assigned = new Set();
-
-        users.forEach(u => {
-          if (assigned.has(u.id)) return;
-          const group = [u];
-          assigned.add(u.id);
-
-          users.forEach(other => {
-            if (assigned.has(other.id)) return;
-            const dLat = u.lat - other.lat;
-            const dLng = u.lng - other.lng;
-            const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-            if (dist <= radiusDegrees) {
-              group.push(other);
-              assigned.add(other.id);
-            }
-          });
-
-          const avgLat = group.reduce((s, p) => s + p.lat, 0) / group.length;
-          const avgLng = group.reduce((s, p) => s + p.lng, 0) / group.length;
-
-          // Determine primary town label for the cluster
-          const townCounts = {};
-          group.forEach(p => { townCounts[p.town] = (townCounts[p.town] || 0) + 1; });
-          const primaryTown = Object.entries(townCounts).sort((a, b) => b[1] - a[1])[0][0];
-
-          clusters.push({
-            id: `cluster-${u.id}`,
-            lat: avgLat,
-            lng: avgLng,
-            state: u.state,
-            primaryTown,
-            users: group
-          });
-        });
-
-        return clusters;
-      },
-
-      renderLevel2RegionalClusters(zoom) {
-        const users = this.getFilteredUsers();
-
-        // Keep subtle state outlines so state borders remain clear while panning
-        if (this.usStatesGeoJson) {
-          L.geoJSON(this.usStatesGeoJson, {
-            style: () => ({
-              fillColor: '#ffffff',
-              fillOpacity: 0.08,
-              color: '#334155',
-              weight: 1.8
-            })
-          }).addTo(this.layers.statePolygons);
-        }
-
-        // Dynamic clustering radius shrinks as user zooms in from 7 -> 8 -> 9
-        const radiusDegrees = zoom === 7 ? 1.45 : zoom === 8 ? 0.65 : 0.25;
-        const clusters = this.clusterUsersByDistance(users, radiusDegrees);
-
-        // Map each user ID to its cluster centroid so we can draw inter-cluster connection lines
-        const userClusterCoord = {};
-        clusters.forEach(c => {
-          c.users.forEach(u => {
-            userClusterCoord[u.id] = [c.lat, c.lng];
-          });
-        });
-
-        // Draw crimson connection lines between connected regional clusters
-        const drawnPairs = new Set();
-        this.db.links.forEach(link => {
-          const c1 = userClusterCoord[link.source];
-          const c2 = userClusterCoord[link.target];
-          if (!c1 || !c2) return;
-          if (c1[0] === c2[0] && c1[1] === c2[1]) return;
-          const pairKey = [ `${c1[0]},${c1[1]}`, `${c2[0]},${c2[1]}` ].sort().join('--');
-          if (drawnPairs.has(pairKey)) return;
-          drawnPairs.add(pairKey);
-
-          L.polyline([c1, c2], {
-            color: '#dc2626',
-            weight: 2.5,
-            opacity: 0.65,
-            dashArray: '5, 5'
-          }).addTo(this.layers.networkLines);
-        });
-
-        // Render Regional Cluster Bubbles
-        clusters.forEach(cluster => {
-          const count = cluster.users.length;
-          const size = count >= 10 ? 52 : count >= 4 ? 46 : 40;
-
-          const clusterIcon = L.divIcon({
-            className: '',
-            html: `<div class="regional-cluster-marker" style="width:${size}px;height:${size}px;" title="${cluster.primaryTown}, ${cluster.state} Area (${count} profiles) — Click to zoom in">
-                    <span class="count-num">${count}</span>
-                    <span class="cluster-sub">${cluster.primaryTown}</span>
-                  </div>`,
-            iconSize: [size, size],
-            iconAnchor: [size / 2, size / 2]
-          });
-
-          const marker = L.marker([cluster.lat, cluster.lng], { icon: clusterIcon });
-          marker.on('click', () => {
-            const nextZoom = zoom < 9 ? zoom + 2 : 11;
-            this.map.flyTo([cluster.lat, cluster.lng], nextZoom, { duration: 0.9 });
-          });
-          marker.addTo(this.layers.regionalClusters);
-        });
-      },
-
-      /* ---------------- LEVEL 3: LOCAL TOWN & ORGANIC PROFILE NETWORK (ZOOM 10+) ---------------- */
-      renderLevel3ProfileNetwork(zoom) {
-        const users = this.getFilteredUsers();
-        const userMap = new Map(users.map(u => [u.id, u]));
-
-        // Keep light state border outlines for geographic reference
-        if (this.usStatesGeoJson) {
-          L.geoJSON(this.usStatesGeoJson, {
-            style: () => ({
-              fillColor: 'transparent',
-              fillOpacity: 0,
-              color: '#475569',
-              weight: 1.5,
-              dashArray: '4, 4'
-            })
-          }).addTo(this.layers.statePolygons);
-        }
-
-        // At Zoom 10 (when clustering is enabled), keep a circle for crowded towns (4+ people), or unpack everything at Zoom 11+
-        const useTownClusters = this.enableClustering && zoom <= 10;
-
-        if (useTownClusters) {
-          this.renderClusteredTownNetwork(users, userMap);
-        } else {
-          this.renderIndividualNodeNetwork(users, userMap);
-        }
-      },
-
-      renderClusteredTownNetwork(users, userMap) {
-        // Group users by State + Town if there are >= 4 users crowded in that town at Zoom 10
-        const townBuckets = {};
-        users.forEach(u => {
-          const key = `${u.state}::${u.town}`;
-          if (!townBuckets[key]) townBuckets[key] = [];
-          townBuckets[key].push(u);
-        });
-
-        const visualCoordsByUser = {};
-        const renderedClusters = [];
-
-        Object.entries(townBuckets).forEach(([key, group]) => {
-          if (group.length >= 4) {
-            const avgLat = group.reduce((s, u) => s + u.lat, 0) / group.length;
-            const avgLng = group.reduce((s, u) => s + u.lng, 0) / group.length;
-            group.forEach(u => { visualCoordsByUser[u.id] = [avgLat, avgLng]; });
-            renderedClusters.push({ town: group[0].town, state: group[0].state, lat: avgLat, lng: avgLng, users: group });
-          } else {
-            group.forEach(u => { visualCoordsByUser[u.id] = [u.lat, u.lng]; });
-          }
-        });
-
-        // Draw red connection lines between clusters/nodes
-        this.db.links.forEach(link => {
-          const c1 = visualCoordsByUser[link.source];
-          const c2 = visualCoordsByUser[link.target];
-          if (!c1 || !c2) return;
-          if (c1[0] === c2[0] && c1[1] === c2[1]) return;
-
-          const poly = L.polyline([c1, c2], {
-            color: '#dc2626',
-            weight: 3.5,
-            opacity: 0.88
-          });
-          poly.addTo(this.layers.networkLines);
-        });
-
-        // Render town cluster circles for crowded towns (4+ users)
-        renderedClusters.forEach(cluster => {
-          const size = 50;
-          const icon = L.divIcon({
-            className: '',
-            html: `<div class="town-cluster-marker" style="width:${size}px;height:${size}px;" title="${cluster.town}, ${cluster.state} (${cluster.users.length} profiles) — Click to unpack individual profiles">
-                    <span class="text-sm font-extrabold leading-none">${cluster.users.length}</span>
-                    <span class="text-[9px] font-medium opacity-90 truncate max-w-[44px]">${cluster.town}</span>
-                  </div>`,
-            iconSize: [size, size],
-            iconAnchor: [size / 2, size / 2]
-          });
-          const m = L.marker([cluster.lat, cluster.lng], { icon });
-          m.on('click', () => {
-            this.map.flyTo([cluster.lat, cluster.lng], 12, { duration: 0.9 });
-          });
-          m.addTo(this.layers.networkNodes);
-        });
-
-        // Render individual nodes for towns with < 4 users
-        Object.values(townBuckets).forEach(group => {
-          if (group.length < 4) {
-            group.forEach(u => this.addSingleProfileNodeToMap(u));
-          }
-        });
-      },
-
-      renderIndividualNodeNetwork(users, userMap) {
-        // 1. Draw organic slightly-curved crimson red connection lines matching `profile network.jpg`
-        this.db.links.forEach(link => {
-          const u1 = userMap.get(link.source);
-          const u2 = userMap.get(link.target);
-          if (!u1 || !u2) return;
-
-          const isSameOrg = u1.org === u2.org;
-          const curvePoints = this.computeOrganicCurvePoints([u1.lat, u1.lng], [u2.lat, u2.lng]);
-
-          const line = L.polyline(curvePoints, {
-            color: '#dc2626',
-            weight: 3.5,
-            opacity: 0.95
-          });
-
-          line.bindTooltip(
-            `<div class="text-xs font-sans p-1">
-              <div class="font-bold text-red-600">${isSameOrg ? 'Intra-Organizational Link' : 'Inter-Organizational Link'}</div>
-              <div class="font-semibold text-slate-900">${u1.name} (${u1.org}) &harr; ${u2.name} (${u2.org})</div>
-              <div class="text-[11px] text-slate-500">${link.label || 'Active Network Connection'}</div>
-            </div>`,
-            { sticky: true }
-          );
-
-          line.on('mouseover', (e) => e.target.setStyle({ weight: 5, color: '#991b1b' }));
-          line.on('mouseout', (e) => e.target.setStyle({ weight: 3.5, color: '#dc2626' }));
-          line.addTo(this.layers.networkLines);
-        });
-
-        // 2. Render each User Profile Node
-        users.forEach(u => this.addSingleProfileNodeToMap(u));
-      },
-
-      // Generates a subtle organic arc between two coordinates so lines look hand-drawn/organic like `profile network.jpg`
-      computeOrganicCurvePoints(p1, p2) {
-        const lat1 = p1[0], lng1 = p1[1];
-        const lat2 = p2[0], lng2 = p2[1];
-        const midLat = (lat1 + lat2) / 2;
-        const midLng = (lng1 + lng2) / 2;
-        const dLat = lat2 - lat1;
-        const dLng = lng2 - lng1;
-        const offsetLat = -dLng * 0.08;
-        const offsetLng = dLat * 0.08;
-        const ctrlLat = midLat + offsetLat;
-        const ctrlLng = midLng + offsetLng;
-
-        const pts = [];
-        const steps = 12;
-        for (let t = 0; t <= steps; t++) {
-          const s = t / steps;
-          const lat = (1 - s) * (1 - s) * lat1 + 2 * (1 - s) * s * ctrlLat + s * s * lat2;
-          const lng = (1 - s) * (1 - s) * lng1 + 2 * (1 - s) * s * ctrlLng + s * s * lng2;
-          pts.push([lat, lng]);
-        }
-        return pts;
-      },
-
-      addSingleProfileNodeToMap(user) {
-        const isLinkingSource = this.linkSourceUserId === user.id;
-        const isClassic = this.nodeDisplayStyle === 'classic';
-
-        const innerVisual = isClassic
-          ? `<svg viewBox="0 0 64 64" class="w-11 h-11 text-white mt-2">
-              <circle cx="32" cy="22" r="12" fill="#ffffff"/>
-              <path d="M12 58 C12 42, 52 42, 52 58 Z" fill="#ffffff"/>
-             </svg>`
-          : `<img src="${user.avatar}" alt="${user.name}" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100x100/94a3b8/ffffff?text=User'" />`;
-
-        const html = `
-          <div class="profile-node-wrapper ${isLinkingSource ? 'linking-source-node' : ''}">
-            <div class="profile-node-box ${isClassic ? 'classic-wireframe' : ''}">
-              ${innerVisual}
-            </div>
-            <div class="profile-node-label">${user.name.split(' ')[0]} <span class="text-red-400 font-mono text-[9px]">${user.town}</span></div>
-          </div>
-        `;
-
-        const icon = L.divIcon({
-          className: '',
-          html,
-          iconSize: [74, 72],
-          iconAnchor: [37, 30]
-        });
-
-        const marker = L.marker([user.lat, user.lng], { icon });
-
-        marker.bindTooltip(
-          `<div class="p-1 font-sans">
-            <div class="font-bold text-slate-900">${user.name}</div>
-            <div class="text-xs text-red-600 font-semibold">${user.position} • ${user.org}</div>
-            <div class="text-[11px] text-slate-500 font-mono">${user.town}, ${user.state} • Rank: ${this.normalizeRankValue(user.rank)}/100</div>
-            <div class="text-[10px] text-emerald-700 font-semibold mt-1">Click to open full profile &rarr;</div>
-          </div>`,
-          { direction: 'top', offset: [0, -24] }
-        );
-
-        marker.on('click', () => {
-          if (this.isAdmin && this.adminMapTool === 'link-nodes') {
-            this.handleMapNodeLinkClick(user.id);
-          } else {
-            this.openUserProfile(user.id);
-          }
-        });
-
-        marker.addTo(this.layers.networkNodes);
-      },
-
-      /* ---------------- MAP NAVIGATION HELPERS ---------------- */
-      flyToUSOverview() {
-        this.switchView('map');
-        this.map.flyTo([39.50, -98.35], 4, { duration: 1.0 });
-      },
-
-      flyToStateOverview(stateCode) {
-        this.switchView('map');
-        const meta = US_STATES_META[stateCode];
-        if (!meta) return;
-        this.map.flyTo([meta.lat, meta.lng], 7, { duration: 1.0 });
-      },
-
-      zoomToStage(targetZoom) {
-        this.switchView('map');
-        if (targetZoom >= 10) {
-          // Find nearest user to current map center so zooming to Level 3 always lands on an active town network
-          const center = this.map.getCenter();
-          const users = this.getFilteredUsers();
-          let closest = users[0];
-          let minD = Infinity;
-          users.forEach(u => {
-            const d = Math.hypot(u.lat - center.lat, u.lng - center.lng);
-            if (d < minD) {
-              minD = d;
-              closest = u;
-            }
-          });
-          if (closest) {
-            this.map.flyTo([closest.lat, closest.lng], targetZoom, { duration: 1.0 });
-            return;
-          }
-        }
-        this.map.setZoom(targetZoom);
-      },
-
-      toggleClustering(checked) {
-        this.enableClustering = checked;
-        this.refreshMapLayers();
-      },
-
-      setNodeDisplayStyle(style) {
-        this.nodeDisplayStyle = style;
-        this.refreshMapLayers();
-      },
-
-      setOrgFilter(org) {
-        this.orgFilter = org;
-        this.refreshMapLayers();
-      },
-
-      /* ---------------- RIGHT SIDEBAR INSPECTOR ON MAP ---------------- */
-      renderRightSidePanel(zoom) {
-        const container = document.getElementById('panel-list-container');
-        if (!container) return;
-
-        const bounds = this.map.getBounds();
-        const filteredUsers = this.getFilteredUsers();
-        const visibleUsers = filteredUsers.filter(u => bounds.contains([u.lat, u.lng]));
-        const activeSet = visibleUsers.length > 0 ? visibleUsers : filteredUsers;
-
-        const visibleIds = new Set(activeSet.map(u => u.id));
-        const visibleLinks = this.db.links.filter(l => visibleIds.has(l.source) || visibleIds.has(l.target));
-        const visibleOrgs = new Set(activeSet.map(u => u.org));
-
-        document.getElementById('stat-visible-users').textContent = activeSet.length;
-        document.getElementById('stat-visible-links').textContent = visibleLinks.length;
-        document.getElementById('stat-visible-orgs').textContent = visibleOrgs.size;
-
-        const codeEl = document.getElementById('panel-region-code');
-        const titleEl = document.getElementById('panel-region-title');
-
-        if (zoom <= 6) {
-          codeEl.textContent = 'LEVEL 1 • NATIONAL OVERVIEW (Z3–6)';
-          titleEl.textContent = 'US States by Profile Count';
-          const byState = {};
-          filteredUsers.forEach(u => { byState[u.state] = (byState[u.state] || 0) + 1; });
-          const sortedStates = Object.entries(byState).sort((a, b) => b[1] - a[1]);
-
-          container.innerHTML = sortedStates.map(([st, cnt]) => `
-            <div onclick="app.flyToStateOverview('${st}')" class="p-3 rounded-xl border border-slate-200 hover:border-red-400 hover:bg-red-50/30 transition cursor-pointer flex items-center justify-between">
-              <div class="flex items-center gap-2.5">
-                <span class="w-8 h-8 rounded-lg bg-slate-100 font-mono font-bold text-xs flex items-center justify-center text-slate-800">${st}</span>
-                <div>
-                  <div class="text-xs font-bold text-slate-900">${US_STATES_META[st]?.name || st}</div>
-                  <div class="text-[11px] text-slate-500">Click to zoom to regional clusters</div>
-                </div>
-              </div>
-              <span class="px-2.5 py-1 rounded-full bg-red-600 text-white font-extrabold text-xs shadow-sm">${cnt}</span>
-            </div>
-          `).join('');
-        } else if (zoom >= 7 && zoom <= 9) {
-          codeEl.textContent = 'LEVEL 2 • REGIONAL CLUSTERS (Z7–9)';
-          titleEl.textContent = 'Cities & Towns in View';
-          const byTown = {};
-          activeSet.forEach(u => {
-            const key = `${u.town}, ${u.state}`;
-            if (!byTown[key]) byTown[key] = { count: 0, lat: u.lat, lng: u.lng, town: u.town, state: u.state };
-            byTown[key].count++;
-          });
-          const sortedTowns = Object.values(byTown).sort((a, b) => b.count - a.count);
-
-          container.innerHTML = sortedTowns.map(item => `
-            <div onclick="app.map.flyTo([${item.lat}, ${item.lng}], 11, { duration: 0.9 })" class="p-3 rounded-xl border border-slate-200 hover:border-red-400 hover:bg-red-50/30 transition cursor-pointer flex items-center justify-between">
-              <div class="min-w-0 pr-2">
-                <div class="text-xs font-bold text-slate-900 truncate">${item.town}, ${item.state}</div>
-                <div class="text-[11px] text-slate-500">Click to unpack local network</div>
-              </div>
-              <span class="w-8 h-8 shrink-0 rounded-full bg-red-600 border-2 border-slate-900 text-white font-extrabold text-xs flex items-center justify-center">${item.count}</span>
-            </div>
-          `).join('');
-        } else {
-          codeEl.textContent = 'LEVEL 3 • LOCAL NETWORK NODES (Z10+)';
-          titleEl.textContent = `Profiles in View (${activeSet.length})`;
-          container.innerHTML = activeSet.slice(0, 40).map(u => `
-            <div onclick="app.openUserProfile('${u.id}')" class="p-2.5 rounded-xl border border-slate-200 hover:border-red-400 hover:bg-red-50/30 transition cursor-pointer flex items-center gap-3">
-              <img src="${u.avatar}" alt="${u.name}" class="w-10 h-10 rounded-lg object-cover border border-slate-300 shrink-0" onerror="this.src='https://placehold.co/80x80/94a3b8/ffffff?text=U'" />
-              <div class="min-w-0 flex-1">
-                <div class="text-xs font-bold text-slate-900 truncate">${u.name}</div>
-                <div class="text-[11px] text-red-600 font-medium truncate">${u.org}</div>
-                <div class="text-[10px] text-slate-500 font-mono">${u.town}, ${u.state} • Rank ${this.normalizeRankValue(u.rank)}</div>
-              </div>
-              <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
-            </div>
-          `).join('');
-        }
-      },
-
-      /***********************************************************************
-       * 5. USER PROFILE SUBPAGE RENDERER (Matches `user page ref.png` & `image_4f4d7e.png`)
-       ***********************************************************************/
-      openUserProfile(userId, initialTab = 'Summary') {
-        const user = this.db.users.find(u => u.id === userId);
-        if (!user) return;
-
-        this.activeProfileId = userId;
-        this.activeProfileTab = initialTab;
-        this.switchView('profile');
-
-        const rankNum = this.normalizeRankValue(user.rank);
-
-        // Populate Left Column fields matching `user page ref.png` and `image_4f4d7e.png`
-        document.getElementById('profile-avatar-img').src = user.avatar;
-        document.getElementById('profile-state-pill').textContent = `${user.town}, ${user.state}`;
-
-        // Position the pin along the 0-100 gradient bar
-        const rankPin = document.getElementById('profile-rank-pin');
-        const rankTooltip = document.getElementById('profile-rank-pin-tooltip');
-        const rankBadge = document.getElementById('profile-rank-Value-badge');
-        if (rankPin) rankPin.style.left = `${rankNum}%`;
-        if (rankTooltip) rankTooltip.textContent = `Rank: ${rankNum}`;
-        if (rankBadge) rankBadge.textContent = `${rankNum} / 100`;
-
-        document.getElementById('profile-field-name').textContent = user.name;
-        document.getElementById('profile-field-age').textContent = user.age;
-        document.getElementById('profile-field-position').textContent = user.position;
-        document.getElementById('profile-field-org').textContent = user.org;
-        document.getElementById('profile-field-location').innerHTML = `
-          <i class="fa-solid fa-location-dot text-red-600"></i>
-          <span>${user.town}, ${user.state}</span>
-        `;
-
-        document.getElementById('profile-back-town').textContent = `${user.town}, ${user.state}`;
-        document.getElementById('profile-breadcrumb-state').textContent = `State: ${US_STATES_META[user.state]?.name || user.state}`;
-        document.getElementById('profile-breadcrumb-town').textContent = `Town: ${user.town}`;
-
-        const adminActions = document.getElementById('profile-admin-actions');
-        if (adminActions) {
-          adminActions.className = this.isAdmin ? 'flex items-center gap-2' : 'hidden';
-        }
-
-        this.renderProfileTabs(user);
-        this.renderProfileActiveTabContent(user);
-      },
-
-      renderProfileTabs(user) {
-        const header = document.getElementById('profile-tabs-header');
-        const coreTabs = ['Summary', 'Content', 'Video', 'Network'];
-        const customTabs = (user.customTabs || []).map(t => t.title);
-        const allTabs = [...coreTabs, ...customTabs];
-
-        header.innerHTML = allTabs.map(tabName => {
-          const isActive = this.activeProfileTab === tabName;
-          return `
-            <button
-              onclick="app.selectProfileTab('${tabName.replace(/'/g, "\\'")}')"
-              class="profile-folder-tab ${isActive ? 'active' : ''}"
-            >
-              ${tabName}
-            </button>
-          `;
-        }).join('');
-      },
-
-      selectProfileTab(tabName) {
-        this.activeProfileTab = tabName;
-        const user = this.db.users.find(u => u.id === this.activeProfileId);
-        if (!user) return;
-        this.renderProfileTabs(user);
-        this.renderProfileActiveTabContent(user);
-      },
-
-      renderProfileActiveTabContent(user) {
-        const panel = document.getElementById('profile-tab-panel');
-        const tab = this.activeProfileTab;
-
-        const connectedEntries = this.getConnectedUsersFor(user.id);
-        const sameStatePeers = this.db.users.filter(u => u.state === user.state && u.id !== user.id);
-
-        if (tab === 'Summary') {
-          const featuredLinkHtml = connectedEntries.length > 0
-            ? `<button onclick="app.openUserProfile('${connectedEntries[0].peer.id}')" class="text-blue-600 font-bold underline hover:text-blue-800 mx-1">${connectedEntries[0].peer.name} (${connectedEntries[0].peer.org})</button>`
-            : `<span class="text-blue-600 font-semibold underline mx-1">${user.org} Regional Command</span>`;
-
-          panel.innerHTML = `
-            <div class="space-y-6">
-              <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-                <div>
-                  <span class="text-xs font-mono uppercase tracking-wider text-red-600 font-bold">Executive Dossier &amp; Summary</span>
-                  <h2 class="text-2xl font-extrabold text-slate-900 mt-0.5">${user.name}</h2>
-                </div>
-                <div class="flex items-center gap-2">
-                  <span class="px-3 py-1 rounded-full bg-slate-100 border border-slate-300 text-xs font-mono font-semibold text-slate-800">
-                    ${user.town}, ${user.state}
-                  </span>
-                  <span class="px-3 py-1 rounded-full bg-red-50 border border-red-200 text-xs font-bold text-red-700">
-                    ${connectedEntries.length} Direct Network Links
-                  </span>
-                </div>
-              </div>
-
-              <!-- Main Summary Narrative with Hyperlinked Organizational Reference (Matches user page ref.png) -->
-              <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 leading-relaxed text-slate-700 text-sm space-y-3">
-                <p>
-                  <strong>${user.name}</strong> serves as <strong>${user.position}</strong> (Rank Score: <strong>${this.normalizeRankValue(user.rank)} / 100</strong>) for
-                  <span class="font-semibold text-slate-900">${user.org}</span>, operating out of
-                  <strong>${user.town}, ${US_STATES_META[user.state]?.name || user.state}</strong>.
-                </p>
-                <p>
-                  ${user.bio} Currently maintains active inter-organizational coordination with
-                  ${featuredLinkHtml} and ${Math.max(1, connectedEntries.length - 1)} other connected members across the regional network.
-                </p>
-              </div>
-
-              <!-- Key Operational Metrics Grid -->
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div class="p-4 rounded-2xl border border-slate-200 bg-white">
-                  <div class="text-xs font-bold uppercase text-slate-400">Primary Operating Town</div>
-                  <div class="text-base font-extrabold text-slate-900 mt-1">${user.town}, ${user.state}</div>
-                  <div class="text-xs font-mono text-slate-500 mt-0.5">Lat ${user.lat}, Lng ${user.lng}</div>
-                </div>
-                <div class="p-4 rounded-2xl border border-slate-200 bg-white">
-                  <div class="text-xs font-bold uppercase text-slate-400">State Network Chapter</div>
-                  <div class="text-base font-extrabold text-red-600 mt-1">${US_STATES_META[user.state]?.name || user.state} (${user.state})</div>
-                  <div class="text-xs text-slate-500 mt-0.5">${sameStatePeers.length + 1} total profiles in this state</div>
-                </div>
-                <div class="p-4 rounded-2xl border border-slate-200 bg-white">
-                  <div class="text-xs font-bold uppercase text-slate-400">Organizational Affiliation</div>
-                  <div class="text-base font-extrabold text-slate-900 mt-1">${user.org}</div>
-                  <div class="text-xs text-emerald-600 font-semibold mt-0.5"><i class="fa-solid fa-circle-check mr-1"></i>Verified Active Node</div>
-                </div>
-              </div>
-
-              <!-- Direct Connections Quick Preview -->
-              <div>
-                <div class="flex items-center justify-between mb-3">
-                  <h3 class="text-sm font-bold text-slate-900">Direct Network Connections (${connectedEntries.length})</h3>
-                  <button onclick="app.selectProfileTab('Network')" class="text-xs font-semibold text-red-600 hover:underline">
-                    Open Interactive Network Tab &rarr;
-                  </button>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  ${connectedEntries.map(({ peer }) => `
-                    <div onclick="app.openUserProfile('${peer.id}')" class="p-3 rounded-xl border border-slate-200 hover:border-red-400 hover:bg-red-50/20 transition cursor-pointer flex items-center gap-3">
-                      <img src="${peer.avatar}" class="w-10 h-10 rounded-lg object-cover border border-slate-300" onerror="this.src='https://placehold.co/80x80/94a3b8/ffffff?text=U'" />
-                      <div class="min-w-0 flex-1">
-                        <div class="text-xs font-bold text-slate-900 truncate">${peer.name}</div>
-                        <div class="text-[11px] text-red-600 font-semibold truncate">${peer.org}</div>
-                        <div class="text-[10px] text-slate-500 truncate">${peer.town}, ${peer.state}</div>
-                      </div>
-                    </div>
-                  `).join('') || `<p class="text-xs text-slate-500">No direct connections yet. Use the Network tab to link profiles.</p>`}
-                </div>
-              </div>
-            </div>
-          `;
-        } else if (tab === 'Content') {
-          const contents = user.contents || [];
-          panel.innerHTML = `
-            <div class="space-y-6">
-              <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-                <div>
-                  <span class="text-xs font-mono uppercase tracking-wider text-red-600 font-bold">Published Reports &amp; Field Documents</span>
-                  <h2 class="text-xl font-extrabold text-slate-900 mt-0.5">${user.name}'s Content Feed</h2>
-                </div>
-                ${this.isAdmin ? `
-                  <button onclick="app.promptAddContentItem()" class="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm">
-                    <i class="fa-solid fa-plus"></i> Add Content Post
-                  </button>
-                ` : ''}
-              </div>
-
-              <div class="space-y-4">
-                ${contents.map(item => `
-                  <article class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 hover:bg-white transition shadow-sm">
-                    <div class="flex items-center justify-between gap-2 mb-2">
-                      <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">${item.category || 'Briefing'}</span>
-                      <div class="flex items-center gap-3">
-                        <span class="text-xs font-mono text-slate-400">${item.date || 'Oct 2026'}</span>
-                        ${this.isAdmin ? `
-                          <button onclick="app.deleteContentItem('${item.id}')" class="text-xs text-slate-400 hover:text-red-600" title="Remove post">
-                            <i class="fa-solid fa-trash-can"></i>
-                          </button>
-                        ` : ''}
-                      </div>
-                    </div>
-                    <h3 class="text-base font-bold text-slate-900 mb-1.5">${item.title}</h3>
-                    <p class="text-sm text-slate-700 leading-relaxed">${item.body}</p>
-                  </article>
-                `).join('') || `<p class="text-sm text-slate-500">No content items published yet.</p>`}
-              </div>
-            </div>
-          `;
-        } else if (tab === 'Video') {
-          const videos = user.videos || [];
-          panel.innerHTML = `
-            <div class="space-y-6">
-              <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-                <div>
-                  <span class="text-xs font-mono uppercase tracking-wider text-red-600 font-bold">Embedded Media &amp; Field Briefings</span>
-                  <h2 class="text-xl font-extrabold text-slate-900 mt-0.5">Video Library (${videos.length})</h2>
-                </div>
-                ${this.isAdmin ? `
-                  <button onclick="app.promptAddVideoItem()" class="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm">
-                    <i class="fa-solid fa-video"></i> + Add Video URL
-                  </button>
-                ` : ''}
-              </div>
-
-              <div class="grid grid-cols-1 gap-6">
-                ${videos.map(v => `
-                  <div class="rounded-2xl border border-slate-200 overflow-hidden bg-slate-900 shadow-md">
-                    <video controls class="w-full max-h-[380px] bg-black">
-                      <source src="${v.url}" type="video/mp4" />
-                      Your browser does not support HTML5 video.
-                    </video>
-                    <div class="p-4 bg-white">
-                      <div class="flex items-center justify-between">
-                        <h3 class="text-base font-bold text-slate-900">${v.title}</h3>
-                        <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600">${v.duration || 'HD'}</span>
-                      </div>
-                      <p class="text-xs text-slate-600 mt-1">${v.caption || ''}</p>
-                    </div>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          `;
-        } else if (tab === 'Network') {
-          const otherUsers = this.db.users.filter(u => u.id !== user.id);
-          panel.innerHTML = `
-            <div class="space-y-6">
-              <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-4">
-                <div>
-                  <span class="text-xs font-mono uppercase tracking-wider text-red-600 font-bold">Inter-Organizational &amp; Local Graph</span>
-                  <h2 class="text-xl font-extrabold text-slate-900 mt-0.5">${user.name}'s Network Connections (${connectedEntries.length})</h2>
-                </div>
-                <button onclick="app.returnToMapAtCurrentUser()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5">
-                  <i class="fa-solid fa-map-location-dot text-red-400"></i> View Red Lines on Map
-                </button>
-              </div>
-
-              <!-- Interactive SVG Ego-Network Diagram -->
-              <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4">
-                <div class="text-xs font-bold text-slate-600 mb-2 flex items-center justify-between">
-                  <span>Interactive Connection Diagram (Click any node to visit profile)</span>
-                  <span class="font-mono text-[11px] text-red-600">Red Line = Active Connection</span>
-                </div>
-                <div id="ego-network-svg-box" class="w-full h-64 flex items-center justify-center"></div>
-              </div>
-
-              <!-- Admin Link Builder -->
-              ${this.isAdmin ? `
-                <div class="bg-red-50/60 border border-red-200 rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
-                  <div class="flex-1">
-                    <label class="block text-xs font-bold uppercase text-red-800 mb-1">Connect ${user.name} with another Profile</label>
-                    <select id="network-add-target-select" class="w-full px-3 py-2 rounded-xl border border-red-200 text-xs font-medium bg-white">
-                      ${otherUsers.map(o => `<option value="${o.id}">${o.name} — ${o.org} (${o.town}, ${o.state})</option>`).join('')}
-                    </select>
-                  </div>
-                  <div class="sm:w-56">
-                    <label class="block text-xs font-bold uppercase text-red-800 mb-1">Connection Type / Label</label>
-                    <input id="network-add-label-input" type="text" placeholder="e.g. Inter-Org Liaison" class="w-full px-3 py-2 rounded-xl border border-red-200 text-xs bg-white" />
-                  </div>
-                  <button onclick="app.addConnectionFromProfile()" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-semibold shrink-0 shadow-sm">
-                    + Draw Red Line Link
-                  </button>
-                </div>
-              ` : ''}
-
-              <!-- Connected Profiles List -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                ${connectedEntries.map(({ peer, link }) => {
-                  const isInterOrg = peer.org !== user.org;
-                  return `
-                    <div class="p-4 rounded-2xl border border-slate-200 bg-white flex items-center justify-between gap-3 hover:border-red-300 transition">
-                      <div onclick="app.openUserProfile('${peer.id}')" class="flex items-center gap-3 cursor-pointer min-w-0 flex-1">
-                        <img src="${peer.avatar}" class="w-12 h-12 rounded-xl object-cover border border-slate-300 shrink-0" onerror="this.src='https://placehold.co/80x80/94a3b8/ffffff?text=U'" />
-                        <div class="min-w-0">
-                          <div class="flex items-center gap-1.5">
-                            <span class="text-sm font-bold text-slate-900 truncate">${peer.name}</span>
-                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${isInterOrg ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'}">
-                              ${isInterOrg ? 'Inter-Org' : 'Same Org'}
-                            </span>
-                          </div>
-                          <div class="text-xs text-slate-600 truncate">${peer.position} • <strong>${peer.org}</strong></div>
-                          <div class="text-[11px] font-mono text-slate-400">${peer.town}, ${peer.state} — ${link.label || 'Linked'}</div>
-                        </div>
-                      </div>
-                      ${this.isAdmin ? `
-                        <button onclick="app.removeConnectionById('${link.id}')" class="px-2.5 py-1.5 rounded-lg text-xs text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200" title="Remove connection line">
-                          <i class="fa-solid fa-link-slash"></i>
-                        </button>
-                      ` : ''}
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            </div>
-          `;
-          this.renderEgoNetworkSVG(user, connectedEntries);
-        } else {
-          // Custom Tab added by Admin
-          const customTab = (user.customTabs || []).find(t => t.title === tab);
-          panel.innerHTML = `
-            <div class="space-y-4">
-              <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-                <div>
-                  <span class="text-xs font-mono uppercase tracking-wider text-emerald-600 font-bold">Custom Profile Tab</span>
-                  <h2 class="text-xl font-extrabold text-slate-900 mt-0.5">${customTab ? customTab.title : tab}</h2>
-                </div>
-                ${this.isAdmin ? `
-                  <button onclick="app.deleteCustomTab('${tab.replace(/'/g, "\\'")}')" class="text-xs text-red-600 hover:underline font-semibold">
-                    Delete Custom Tab
-                  </button>
-                ` : ''}
-              </div>
-              <div class="prose max-w-none text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                ${customTab ? customTab.content : ''}
-              </div>
-            </div>
-          `;
-        }
-      },
-
-      renderEgoNetworkSVG(centerUser, connectedEntries) {
-        const box = document.getElementById('ego-network-svg-box');
-        if (!box) return;
-        const w = 640, h = 240;
-        const cx = w / 2, cy = h / 2;
-        const radius = 88;
-
-        let linesSvg = '';
-        let nodesSvg = '';
-
-        connectedEntries.slice(0, 10).forEach((entry, idx) => {
-          const total = Math.min(10, connectedEntries.length);
-          const angle = (idx / total) * Math.PI * 2 - Math.PI / 2;
-          const nx = cx + Math.cos(angle) * radius * 1.6;
-          const ny = cy + Math.sin(angle) * radius;
-
-          linesSvg += `<line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="#dc2626" stroke-width="3" />`;
-          nodesSvg += `
-            <g onclick="app.openUserProfile('${entry.peer.id}')" style="cursor:pointer">
-              <circle cx="${nx}" cy="${ny}" r="20" fill="#ffffff" stroke="#1e293b" stroke-width="2.5" />
-              <text x="${nx}" y="${ny + 4}" text-anchor="middle" font-size="10" font-weight="700" fill="#0f172a">${entry.peer.name.split(' ')[0]}</text>
-              <text x="${nx}" y="${ny + 33}" text-anchor="middle" font-size="9" font-weight="600" fill="#dc2626">${entry.peer.org.slice(0, 16)}</text>
-            </g>
-          `;
-        });
-
-        box.innerHTML = `
-          <svg viewBox="0 0 ${w} ${h}" class="w-full h-full">
-            ${linesSvg}
-            ${nodesSvg}
-            <g>
-              <circle cx="${cx}" cy="${cy}" r="28" fill="#dc2626" stroke="#0f172a" stroke-width="3" />
-              <text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="11" font-weight="800" fill="#ffffff">${centerUser.name.split(' ')[0]}</text>
-            </g>
-          </svg>
-        `;
-      },
-
-      getConnectedUsersFor(userId) {
-        const result = [];
-        this.db.links.forEach(link => {
-          if (link.source === userId) {
-            const peer = this.db.users.find(u => u.id === link.target);
-            if (peer) result.push({ peer, link });
-          } else if (link.target === userId) {
-            const peer = this.db.users.find(u => u.id === link.source);
-            if (peer) result.push({ peer, link });
-          }
-        });
-        return result;
-      },
-
-      returnToMapAtCurrentUser() {
-        const user = this.db.users.find(u => u.id === this.activeProfileId);
-        this.switchView('map');
-        if (user) {
-          this.map.flyTo([user.lat, user.lng], 12, { duration: 0.9 });
-        }
-      },
-
-      flyToStateFromProfile() {
-        const user = this.db.users.find(u => u.id === this.activeProfileId);
-        if (user) this.flyToStateOverview(user.state);
-      },
-
-      /***********************************************************************
-       * 6. DIRECTORY, GLOBAL SEARCH & VIEW SWITCHING
-       ***********************************************************************/
-      switchView(view) {
-        this.currentView = view;
-        ['map', 'profile', 'directory', 'server'].forEach(v => {
-          const sec = document.getElementById(`view-${v}`);
-          if (sec) sec.classList.toggle('hidden', v !== view);
-        });
-
-        ['map', 'directory', 'server'].forEach(v => {
-          const btn = document.getElementById(`nav-btn-${v}`);
-          if (btn) {
-            const active = (v === view) || (view === 'profile' && v === 'directory');
-            btn.className = active
-              ? 'px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 bg-white text-slate-900 shadow-sm'
-              : 'px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900';
-          }
-        });
-
-        if (view === 'map' && this.map) {
-          setTimeout(() => this.map.invalidateSize(), 60);
-        } else if (view === 'directory') {
-          this.renderDirectory();
-        } else if (view === 'server') {
-          this.renderServerView();
-        }
-      },
-
-      navigateToMap() {
-        this.switchView('map');
-      },
-
-      renderDirectory() {
-        const grid = document.getElementById('directory-grid');
-        if (!grid) return;
-
-        const stFilter = document.getElementById('dir-state-filter')?.value || 'ALL';
-        const orgFilter = document.getElementById('dir-org-filter')?.value || 'ALL';
-
-        const filtered = this.db.users.filter(u => {
-          if (stFilter !== 'ALL' && u.state !== stFilter) return false;
-          if (orgFilter !== 'ALL' && u.org !== orgFilter) return false;
-          return true;
-        });
-
-        grid.innerHTML = filtered.map(u => {
-          const linkCount = this.getConnectedUsersFor(u.id).length;
-          const rankVal = this.normalizeRankValue(u.rank);
-          return `
-            <div onclick="app.openUserProfile('${u.id}')" class="bg-white rounded-2xl border border-slate-200 p-4 hover:border-red-400 hover:shadow-md transition cursor-pointer flex flex-col justify-between">
-              <div>
-                <div class="flex items-start gap-3.5">
-                  <img src="${u.avatar}" alt="${u.name}" class="w-14 h-14 rounded-2xl object-cover border-2 border-slate-900 shrink-0" onerror="this.src='https://placehold.co/100x100/94a3b8/ffffff?text=U'" />
-                  <div class="min-w-0 flex-1">
-                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">${u.state} • ${u.town}</span>
-                    <h3 class="text-sm font-extrabold text-slate-900 mt-1 truncate">${u.name}</h3>
-                    <p class="text-xs text-slate-600 truncate">${u.position}</p>
-                  </div>
-                </div>
-                <div class="mt-3 pt-3 border-t border-slate-100 text-xs space-y-2 text-slate-600">
-                  <div><strong class="text-slate-800">Org:</strong> ${u.org}</div>
-                  <div>
-                    <div class="flex items-center justify-between text-[10px] font-bold uppercase text-slate-400 mb-3">
-                      <span>Rank:</span>
-                      <span class="font-mono text-slate-600">${rankVal} / 100</span>
-                    </div>
-                    <div class="relative">
-                      <div class="rank-gradient-bar" style="height: 12px; border-width: 2px;">
-                        <div class="rank-pin-marker" style="left: ${rankVal}%; top: -18px;">
-                          <svg width="14" height="18" viewBox="0 0 24 30" fill="none">
-                            <path d="M12 21 C12 21 19 14.5 19 9 C19 4.8 15.8 2 12 2 C8.2 2 5 4.8 5 9 C5 14.5 12 21 12 21 Z" fill="#ffffff" stroke="#0f172a" stroke-width="3"/>
-                            <line x1="12" y1="21" x2="12" y2="29" stroke="#0f172a" stroke-width="3.2"/>
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
-                <span class="font-semibold text-red-600"><i class="fa-solid fa-circle-nodes mr-1"></i>${linkCount} connections</span>
-                <span class="font-semibold text-slate-700 hover:text-red-600">Open Profile &rarr;</span>
-              </div>
-            </div>
-          `;
-        }).join('');
-      },
-
-      handleGlobalSearch(query) {
-        const resultsEl = document.getElementById('global-search-results');
-        const clearBtn = document.getElementById('clear-search-btn');
-        const q = (query || '').trim().toLowerCase();
-
-        if (!q) {
-          resultsEl.classList.add('hidden');
-          clearBtn.classList.add('hidden');
-          return;
-        }
-        clearBtn.classList.remove('hidden');
-
-        const matchedStates = Object.entries(US_STATES_META).filter(([code, meta]) =>
-          code.toLowerCase().includes(q) || meta.name.toLowerCase().includes(q)
-        ).slice(0, 3);
-
-        const matchedUsers = this.db.users.filter(u =>
-          u.name.toLowerCase().includes(q) ||
-          u.org.toLowerCase().includes(q) ||
-          u.town.toLowerCase().includes(q) ||
-          u.state.toLowerCase().includes(q) ||
-          u.position.toLowerCase().includes(q)
-        ).slice(0, 8);
-
-        let html = '';
-
-        if (matchedStates.length > 0) {
-          html += `<div class="px-3 py-1.5 bg-slate-50 text-[10px] font-mono uppercase font-bold text-slate-500">States</div>`;
-          html += matchedStates.map(([code, meta]) => `
-            <div onclick="app.flyToStateOverview('${code}'); document.getElementById('global-search-results').classList.add('hidden');" class="px-4 py-2.5 hover:bg-red-50 cursor-pointer flex items-center justify-between">
-              <div>
-                <div class="text-xs font-mono font-bold text-red-600">${code} — ${meta.name}</div>
-                <div class="text-xs text-slate-700">Zoom to state regional clusters</div>
-              </div>
-              <span class="text-xs font-semibold text-slate-500">Zoom to State &rarr;</span>
-            </div>
-          `).join('');
-        }
-
-        if (matchedUsers.length > 0) {
-          html += `<div class="px-3 py-1.5 bg-slate-50 text-[10px] font-mono uppercase font-bold text-slate-500">User Profiles</div>`;
-          html += matchedUsers.map(u => `
-            <div class="px-4 py-2.5 hover:bg-slate-50 flex items-center justify-between gap-2">
-              <div onclick="app.openUserProfile('${u.id}'); document.getElementById('global-search-results').classList.add('hidden');" class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
-                <img src="${u.avatar}" class="w-8 h-8 rounded-lg object-cover border border-slate-300" />
-                <div class="min-w-0">
-                  <div class="text-xs font-bold text-slate-900 truncate">${u.name}</div>
-                  <div class="text-[11px] text-slate-500 truncate">${u.org} • ${u.town}, ${u.state}</div>
-                </div>
-              </div>
-              <button onclick="app.switchView('map'); app.map.flyTo([${u.lat}, ${u.lng}], 12); document.getElementById('global-search-results').classList.add('hidden');" class="px-2 py-1 rounded bg-slate-100 hover:bg-red-100 text-red-700 text-[10px] font-semibold shrink-0">
-                Map
-              </button>
-            </div>
-          `).join('');
-        }
-
-        if (!html) {
-          html = `<div class="p-4 text-xs text-slate-500 text-center">No matching profiles, cities, or states found.</div>`;
-        }
-
-        resultsEl.innerHTML = html;
-        resultsEl.classList.remove('hidden');
-      },
-
-      clearGlobalSearch() {
-        const input = document.getElementById('global-search-input');
-        if (input) input.value = '';
-        document.getElementById('global-search-results').classList.add('hidden');
-        document.getElementById('clear-search-btn').classList.add('hidden');
-      },
-
-      /***********************************************************************
-       * 7. ADMIN MODE, INTERACTIVE MAP LINKING & CRUD MODALS
-       ***********************************************************************/
-      toggleAdminMode() {
-        this.isAdmin = !this.isAdmin;
-        this.setAdminMapTool(null);
-
-        const btn = document.getElementById('admin-mode-btn');
-        const label = document.getElementById('admin-mode-label');
-        const icon = document.getElementById('admin-lock-icon');
-        const mapToolbar = document.getElementById('admin-map-toolbar');
-        const panelAddBtn = document.getElementById('panel-add-user-btn');
-
-        if (this.isAdmin) {
-          btn.className = 'px-3 py-2 rounded-xl text-xs font-semibold border transition flex items-center gap-2 bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-sm';
-          label.textContent = 'Admin: ON';
-          icon.className = 'fa-solid fa-user-shield text-emerald-400';
-          if (mapToolbar) mapToolbar.classList.remove('hidden');
-          if (panelAddBtn) panelAddBtn.classList.remove('hidden');
-          this.showToast('Admin Mode enabled: You can add/edit profiles, draw connections, and add tabs.', 'success');
-        } else {
-          btn.className = 'px-3 py-2 rounded-xl text-xs font-semibold border transition flex items-center gap-2 bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200';
-          label.textContent = 'Visitor View';
-          icon.className = 'fa-solid fa-lock text-slate-500';
-          if (mapToolbar) mapToolbar.classList.add('hidden');
-          if (panelAddBtn) panelAddBtn.classList.add('hidden');
-          this.showToast('Switched to Public Visitor View (Read-Only).', 'info');
-        }
-
-        if (this.currentView === 'profile' && this.activeProfileId) {
-          this.openUserProfile(this.activeProfileId, this.activeProfileTab);
-        }
-      },
-
-      setAdminMapTool(tool) {
-        this.adminMapTool = tool;
-        this.linkSourceUserId = null;
-
-        const banner = document.getElementById('admin-active-tool-banner');
-        const msg = document.getElementById('admin-active-tool-msg');
-        const btnPlace = document.getElementById('btn-tool-place-user');
-        const btnLink = document.getElementById('btn-tool-link-nodes');
-
-        if (btnPlace) btnPlace.classList.toggle('bg-emerald-600', tool === 'add-user');
-        if (btnLink) btnLink.classList.toggle('bg-red-600', tool === 'link-nodes');
-
-        if (!tool) {
-          if (banner) banner.classList.add('hidden');
-        } else if (tool === 'add-user') {
-          banner.classList.remove('hidden');
-          msg.textContent = 'Click any town/location on the map to place a new user profile.';
-        } else if (tool === 'link-nodes') {
-          banner.classList.remove('hidden');
-          msg.textContent = 'Step 1: Click the FIRST user profile node on the map.';
-          if (this.map.getZoom() < 10) {
-            this.zoomToStage(11);
-          }
-        }
-        this.refreshMapLayers();
-      },
-
-      handleMapNodeLinkClick(userId) {
-        if (!this.linkSourceUserId) {
-          this.linkSourceUserId = userId;
-          const u1 = this.db.users.find(u => u.id === userId);
-          document.getElementById('admin-active-tool-msg').textContent = `Selected ${u1.name}. Now click a SECOND user node to toggle a red line.`;
-          this.refreshMapLayers();
-          return;
-        }
-
-        if (this.linkSourceUserId === userId) {
-          this.linkSourceUserId = null;
-          document.getElementById('admin-active-tool-msg').textContent = 'Selection cleared. Click first user node.';
-          this.refreshMapLayers();
-          return;
-        }
-
-        const source = this.linkSourceUserId;
-        const target = userId;
-        const existingIdx = this.db.links.findIndex(l =>
-          (l.source === source && l.target === target) || (l.source === target && l.target === source)
-        );
-
-        const u1 = this.db.users.find(u => u.id === source);
-        const u2 = this.db.users.find(u => u.id === target);
-
-        if (existingIdx >= 0) {
-          this.db.links.splice(existingIdx, 1);
-          this.showToast(`Removed connection line between ${u1.name} and ${u2.name}.`, 'info');
-        } else {
-          this.db.links.push({
-            id: `link-${Date.now()}`,
-            source,
-            target,
-            label: `${u1.org} ↔ ${u2.org}`
-          });
-          this.showToast(`Added red connection line between ${u1.name} and ${u2.name}!`, 'success');
-        }
-
-        this.linkSourceUserId = null;
-        this.setAdminMapTool(null);
-        this.saveDatabase();
-        this.refreshMapLayers();
-      },
-
-      openCreateUserModal() {
-        const center = this.map ? this.map.getCenter() : { lat: 39.50, lng: -98.35 };
-        this.openCreateUserModalWithCoords(center.lat, center.lng);
-      },
-
-      openCreateUserModalWithCoords(lat, lng) {
-        document.getElementById('user-modal-title').innerHTML = `<i class="fa-solid fa-user-plus text-red-400"></i><span>Create New Network Profile</span>`;
-        document.getElementById('form-user-id').value = '';
-        document.getElementById('form-name').value = '';
-        document.getElementById('form-rank').value = '44';
-        this.updateFormRankPreview(44);
-        document.getElementById('form-age').value = '35';
-        document.getElementById('form-position').value = 'Regional Operations Lead';
-        document.getElementById('form-org').value = 'Apex Civic Network';
-
-        // Pick nearest state based on clicked coordinates
-        let nearestState = 'NY';
-        let bestDist = Infinity;
-        Object.entries(US_STATES_META).forEach(([code, meta]) => {
-          const d = Math.hypot(meta.lat - lat, meta.lng - lng);
-          if (d < bestDist) {
-            bestDist = d;
-            nearestState = code;
-          }
-        });
-
-        document.getElementById('form-state').value = nearestState;
-        document.getElementById('form-town').value = 'Local Chapter';
-        document.getElementById('form-lat').value = (+lat).toFixed(4);
-        document.getElementById('form-lng').value = (+lng).toFixed(4);
-        document.getElementById('form-avatar').value = `https://i.pravatar.cc/300?img=${Math.floor(Math.random() * 65) + 1}`;
-        document.getElementById('form-bio').value = 'Coordinates regional partnerships and inter-organizational operations across local towns.';
-        document.getElementById('user-modal').classList.remove('hidden');
-      },
-
-      openEditCurrentProfileModal() {
-        const u = this.db.users.find(x => x.id === this.activeProfileId);
-        if (!u) return;
-
-        const rankVal = this.normalizeRankValue(u.rank);
-        document.getElementById('user-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-red-400"></i><span>Edit Profile: ${u.name}</span>`;
-        document.getElementById('form-user-id').value = u.id;
-        document.getElementById('form-name').value = u.name;
-        document.getElementById('form-rank').value = rankVal;
-        this.updateFormRankPreview(rankVal);
-        document.getElementById('form-age').value = u.age;
-        document.getElementById('form-position').value = u.position;
-        document.getElementById('form-org').value = u.org;
-        document.getElementById('form-state').value = u.state;
-        document.getElementById('form-town').value = u.town;
-        document.getElementById('form-lat').value = u.lat;
-        document.getElementById('form-lng').value = u.lng;
-        document.getElementById('form-avatar').value = u.avatar;
-        document.getElementById('form-bio').value = u.bio;
-        document.getElementById('user-modal').classList.remove('hidden');
-      },
-
-      updateFormRankPreview(val) {
-        const num = this.normalizeRankValue(val);
-        const disp = document.getElementById('form-rank-display');
-        const pin = document.getElementById('form-rank-pin-preview');
-        if (disp) disp.textContent = `${num} / 100`;
-        if (pin) pin.style.left = `${num}%`;
-      },
-
-      handleFormStateChange(stateCode) {
-        const meta = US_STATES_META[stateCode];
-        if (meta) {
-          document.getElementById('form-lat').value = meta.lat.toFixed(4);
-          document.getElementById('form-lng').value = meta.lng.toFixed(4);
-        }
-      },
-
-      closeUserModal() {
-        document.getElementById('user-modal').classList.add('hidden');
-      },
-
-      saveUserForm(e) {
-        e.preventDefault();
-        const existingId = document.getElementById('form-user-id').value;
-        const payload = {
-          name: document.getElementById('form-name').value.trim(),
-          rank: this.normalizeRankValue(document.getElementById('form-rank').value),
-          age: parseInt(document.getElementById('form-age').value, 10) || 35,
-          position: document.getElementById('form-position').value.trim(),
-          org: document.getElementById('form-org').value.trim(),
-          state: document.getElementById('form-state').value.trim().toUpperCase(),
-          town: document.getElementById('form-town').value.trim(),
-          lat: parseFloat(document.getElementById('form-lat').value),
-          lng: parseFloat(document.getElementById('form-lng').value),
-          avatar: document.getElementById('form-avatar').value.trim() || 'https://placehold.co/300x300/dc2626/ffffff?text=Profile',
-          bio: document.getElementById('form-bio').value.trim()
-        };
-
-        if (existingId) {
-          const idx = this.db.users.findIndex(u => u.id === existingId);
-          if (idx >= 0) {
-            this.db.users[idx] = { ...this.db.users[idx], ...payload };
-            this.saveDatabase();
-            this.closeUserModal();
-            this.refreshMapLayers();
-            if (this.currentView === 'profile') {
-              this.openUserProfile(existingId, this.activeProfileTab);
-            }
-            this.showToast(`Updated profile for ${payload.name}.`, 'success');
-          }
-        } else {
-          const newId = `u-custom-${Date.now()}`;
-          const newUser = {
-            id: newId,
-            ...payload,
-            contents: [
-              {
-                id: `c-${newId}-1`,
-                title: `Initial Field Deployment — ${payload.town}, ${payload.state}`,
-                date: 'Oct 2026',
-                category: 'Onboarding',
-                body: `${payload.name} joined ${payload.org} in ${payload.town}, ${payload.state}.`
+            const m = L.marker([avgLat, avgLng], { icon });
+            m.on('click', () => {
+              if (group.length === 1) {
+                map.flyTo([group[0].lat, group[0].lng], 12, { duration: 0.6 });
+                openInspector(group[0]);
+              } else {
+                map.flyTo([avgLat, avgLng], Math.min(zoom + 3, 12), { duration: 0.6 });
               }
-            ],
-            videos: [
-              {
-                id: `v-${newId}-1`,
-                title: `${payload.town}, ${payload.state} Sector Introduction`,
-                duration: '01:30',
-                date: 'Oct 2026',
-                url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-                caption: `Introductory briefing for ${payload.name}.`
-              }
-            ],
-            customTabs: []
-          };
-          this.db.users.push(newUser);
-          this.saveDatabase();
-          this.closeUserModal();
-          this.refreshMapLayers();
-          this.showToast(`Added ${payload.name} to ${payload.town}, ${payload.state}.`, 'success');
-        }
-      },
-
-      deleteCurrentProfile() {
-        if (!this.activeProfileId) return;
-        const u = this.db.users.find(x => x.id === this.activeProfileId);
-        if (!u) return;
-        this.db.users = this.db.users.filter(x => x.id !== this.activeProfileId);
-        this.db.links = this.db.links.filter(l => l.source !== this.activeProfileId && l.target !== this.activeProfileId);
-        this.saveDatabase();
-        this.refreshMapLayers();
-        this.switchView('map');
-        this.showToast(`Removed profile ${u.name} and updated state/cluster counts.`, 'info');
-      },
-
-      /* ---------------- PROFILE TAB CONTENT / VIDEO / NETWORK ACTIONS ---------------- */
-      addConnectionFromProfile() {
-        const targetId = document.getElementById('network-add-target-select')?.value;
-        const label = document.getElementById('network-add-label-input')?.value.trim() || 'Inter-Organizational Liaison';
-        if (!targetId || !this.activeProfileId) return;
-
-        const exists = this.db.links.some(l =>
-          (l.source === this.activeProfileId && l.target === targetId) ||
-          (l.source === targetId && l.target === this.activeProfileId)
-        );
-        if (exists) {
-          this.showToast('These two profiles are already connected.', 'info');
-          return;
-        }
-
-        this.db.links.push({
-          id: `link-${Date.now()}`,
-          source: this.activeProfileId,
-          target: targetId,
-          label
-        });
-        this.saveDatabase();
-        this.refreshMapLayers();
-        const user = this.db.users.find(u => u.id === this.activeProfileId);
-        this.renderProfileActiveTabContent(user);
-        this.showToast('Connection added! Red line drawn on map.', 'success');
-      },
-
-      removeConnectionById(linkId) {
-        this.db.links = this.db.links.filter(l => l.id !== linkId);
-        this.saveDatabase();
-        this.refreshMapLayers();
-        const user = this.db.users.find(u => u.id === this.activeProfileId);
-        if (user) this.renderProfileActiveTabContent(user);
-        this.showToast('Connection removed.', 'info');
-      },
-
-      promptAddContentItem() {
-        const user = this.db.users.find(u => u.id === this.activeProfileId);
-        if (!user) return;
-        user.contents = user.contents || [];
-        user.contents.unshift({
-          id: `c-${Date.now()}`,
-          title: `Field Dispatch #${user.contents.length + 1} — ${user.town}, ${user.state}`,
-          date: 'Oct 2026',
-          category: 'Field Update',
-          body: `New operational update logged for ${user.name} (${user.org}) in ${user.town}, ${user.state}. Regional and inter-organizational coordination remains active.`
-        });
-        this.saveDatabase();
-        this.renderProfileActiveTabContent(user);
-        this.showToast('New content post added to profile.', 'success');
-      },
-
-      deleteContentItem(itemId) {
-        const user = this.db.users.find(u => u.id === this.activeProfileId);
-        if (!user) return;
-        user.contents = (user.contents || []).filter(c => c.id !== itemId);
-        this.saveDatabase();
-        this.renderProfileActiveTabContent(user);
-      },
-
-      promptAddVideoItem() {
-        const user = this.db.users.find(u => u.id === this.activeProfileId);
-        if (!user) return;
-        user.videos = user.videos || [];
-        user.videos.push({
-          id: `v-${Date.now()}`,
-          title: `Supplemental Briefing — ${user.org} (${user.town}, ${user.state})`,
-          duration: '00:15',
-          date: 'Oct 2026',
-          url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-          caption: `Uploaded by Admin for ${user.name}.`
-        });
-        this.saveDatabase();
-        this.renderProfileActiveTabContent(user);
-        this.showToast('New video embedded into profile.', 'success');
-      },
-
-      openAddCustomTabModal() {
-        const user = this.db.users.find(u => u.id === this.activeProfileId);
-        if (!user) return;
-        user.customTabs = user.customTabs || [];
-        const tabNum = user.customTabs.length + 1;
-        const newTitle = `Credentials ${tabNum > 1 ? tabNum : ''}`.trim();
-        user.customTabs.push({
-          title: newTitle,
-          content: `Custom Tab ("${newTitle}") for ${user.name}\n\n• Clearance Level: Tier-1 Verified\n• Primary Operating Location: ${user.town}, ${user.state}\n• Organization: ${user.org}\n\nAdmins can restructure or add additional custom tabs to any profile as the platform grows.`
-        });
-        this.activeProfileTab = newTitle;
-        this.saveDatabase();
-        this.renderProfileTabs(user);
-        this.renderProfileActiveTabContent(user);
-        this.showToast(`Added new custom tab "${newTitle}" to ${user.name}'s profile.`, 'success');
-      },
-
-      deleteCustomTab(tabTitle) {
-        const user = this.db.users.find(u => u.id === this.activeProfileId);
-        if (!user) return;
-        user.customTabs = (user.customTabs || []).filter(t => t.title !== tabTitle);
-        this.activeProfileTab = 'Summary';
-        this.saveDatabase();
-        this.renderProfileTabs(user);
-        this.renderProfileActiveTabContent(user);
-        this.showToast(`Removed custom tab "${tabTitle}".`, 'info');
-      },
-
-      /***********************************************************************
-       * 8. SERVER / JSON DATABASE EXPORT & ADMIN LIST MANAGEMENT
-       ***********************************************************************/
-      renderServerView() {
-        this.renderAdminList();
-        const area = document.getElementById('json-preview-textarea');
-        if (area) {
-          area.value = JSON.stringify(this.db, null, 2);
-        }
-      },
-
-      renderAdminList() {
-        const container = document.getElementById('admin-list-container');
-        if (!container) return;
-        container.innerHTML = (this.db.admins || []).map(email => `
-          <div class="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-200 text-xs">
-            <span class="font-mono font-semibold text-slate-800"><i class="fa-solid fa-shield-halved text-emerald-600 mr-1.5"></i>${email}</span>
-            <button onclick="app.removeAdminUser('${email}')" class="text-slate-400 hover:text-red-600">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </div>
-        `).join('');
-      },
-
-      addAdminUser() {
-        const input = document.getElementById('new-admin-email');
-        const val = (input?.value || '').trim();
-        if (!val) return;
-        if (!this.db.admins.includes(val)) {
-          this.db.admins.push(val);
-          this.saveDatabase();
-          this.renderAdminList();
-          this.renderServerView();
-          this.showToast(`Added ${val} as designated administrator.`, 'success');
-        }
-        input.value = '';
-      },
-
-      removeAdminUser(email) {
-        if (this.db.admins.length <= 1) {
-          this.showToast('At least one administrator must remain on the system.', 'info');
-          return;
-        }
-        this.db.admins = this.db.admins.filter(a => a !== email);
-        this.saveDatabase();
-        this.renderAdminList();
-        this.renderServerView();
-      },
-
-      exportDatabaseJSON() {
-        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(this.db, null, 2));
-        const a = document.createElement('a');
-        a.setAttribute('href', dataStr);
-        a.setAttribute('download', `geonet-database-${new Date().toISOString().slice(0, 10)}.json`);
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        this.showToast('Exported complete GeoNet JSON database.', 'success');
-      },
-
-      importDatabaseJSON(event) {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const parsed = JSON.parse(e.target.result);
-            if (Array.isArray(parsed.users) && Array.isArray(parsed.links)) {
-              this.db = parsed;
-              this.saveDatabase();
-              this.refreshMapLayers();
-              this.renderServerView();
-              this.showToast(`Imported ${parsed.users.length} profiles and ${parsed.links.length} connections!`, 'success');
-            } else {
-              this.showToast('Invalid JSON format: Expected { users, links }.', 'info');
-            }
-          } catch (err) {
-            this.showToast('Could not parse JSON file.', 'info');
+            });
+            m.addTo(nodesLayerGroup);
           }
-        };
-        reader.readAsText(file);
-      },
-
-      copyDatabaseJSON() {
-        const area = document.getElementById('json-preview-textarea');
-        if (!area) return;
-        area.select();
-        document.execCommand('copy');
-        this.showToast('Database JSON copied to clipboard!', 'success');
-      },
-
-      showToast(message, type = 'info') {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-        const toast = document.createElement('div');
-        const bg = type === 'success' ? 'bg-slate-900 border-emerald-500' : 'bg-slate-900 border-red-500';
-        toast.className = `${bg} border-l-4 text-white px-4 py-3 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2.5 max-w-sm pointer-events-auto transition-all`;
-        toast.innerHTML = `
-          <i class="fa-solid ${type === 'success' ? 'fa-circle-check text-emerald-400' : 'fa-circle-info text-red-400'}"></i>
-          <span>${message}</span>
-        `;
-        container.appendChild(toast);
-        setTimeout(() => {
-          toast.style.opacity = '0';
-          setTimeout(() => toast.remove(), 300);
-        }, 3400);
+        });
+      } else {
+        // Individual profile nodes (Zoom 10+ or clustering unchecked)
+        activeProfiles.forEach(profile => {
+          createProfileMarker(profile, nodeStyle).addTo(nodesLayerGroup);
+        });
       }
-    };
+    }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      app.init();
+    function createProfileMarker(profile, styleType) {
+      const avatarUrl = profile.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=ef4444&color=fff&bold=true`;
+
+      let html = '';
+      if (styleType === 'pin') {
+        html = `
+          <div class="geonet-pin-marker" title="${profile.name}">
+            <img src="${avatarUrl}" class="w-full h-full object-cover" />
+          </div>`;
+      } else {
+        html = `
+          <div class="geonet-card-marker">
+            <img src="${avatarUrl}" class="w-7 h-7 rounded-full object-cover border border-slate-300" />
+            <div class="pr-1">
+              <div class="text-xs font-bold text-slate-900 leading-none">${profile.name}</div>
+              <div class="text-[10px] font-semibold text-red-600 leading-tight">${profile.organization || 'Member'}</div>
+            </div>
+          </div>`;
+      }
+
+      const icon = L.divIcon({
+        className: '',
+        html,
+        iconSize: null,
+        iconAnchor: styleType === 'pin' ? [18, 18] : [20, 18]
+      });
+
+      const marker = L.marker([profile.lat, profile.lng], { icon });
+      marker.on('click', () => openInspector(profile));
+      return marker;
+    }
+
+    // =========================================================================
+    // 4. PROFILE INSPECTOR & DIRECTORY DRAWER
+    // =========================================================================
+    function openInspector(profile) {
+      const avatarUrl = profile.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=ef4444&color=fff&bold=true`;
+      document.getElementById('inspector-photo').src = avatarUrl;
+      document.getElementById('inspector-name').textContent = profile.name;
+      document.getElementById('inspector-org').textContent = profile.organization || 'Unassigned';
+      document.getElementById('inspector-bio').textContent = profile.bio || 'No biography provided.';
+
+      // Populate coordinates and any dynamic custom fields from backend
+      const metaContainer = document.getElementById('inspector-meta');
+      metaContainer.innerHTML = `
+        <div class="flex justify-between text-slate-500">
+          <span>Coordinates:</span>
+          <span class="mono text-slate-800 font-semibold">${profile.lat.toFixed(4)}, ${profile.lng.toFixed(4)}</span>
+        </div>
+      `;
+
+      if (profile.customFields) {
+        Object.entries(profile.customFields).forEach(([key, val]) => {
+          if (['lattitude', 'latitude', 'longitude', 'organization', 'connections'].includes(key.toLowerCase()) || !val) return;
+          metaContainer.innerHTML += `
+            <div class="flex justify-between text-slate-500">
+              <span class="capitalize">${key.replace(/_/g, ' ')}:</span>
+              <span class="text-slate-800 font-semibold">${val}</span>
+            </div>`;
+        });
+      }
+
+      // Show network peers
+      const edges = buildNetworkEdges(PROFILES).filter(e => e.from.id === profile.id || e.to.id === profile.id);
+      const connContainer = document.getElementById('inspector-connections');
+      connContainer.innerHTML = '';
+
+      if (edges.length === 0) {
+        connContainer.innerHTML = `<span class="text-xs text-slate-400 italic">No linked profiles yet</span>`;
+      } else {
+        edges.forEach(edge => {
+          const peer = edge.from.id === profile.id ? edge.to : edge.from;
+          const badge = document.createElement('button');
+          badge.className = 'text-xs px-2.5 py-1 rounded-full bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-700 font-semibold border border-slate-200 transition';
+          badge.textContent = peer.name;
+          badge.onclick = () => {
+            map.flyTo([peer.lat, peer.lng], 12, { duration: 0.6 });
+            openInspector(peer);
+          };
+          connContainer.appendChild(badge);
+        });
+      }
+
+      document.getElementById('profile-inspector').classList.remove('hidden');
+    }
+
+    function closeInspector() {
+      document.getElementById('profile-inspector').classList.add('hidden');
+    }
+
+    function toggleDirectory(show) {
+      const drawer = document.getElementById('directory-drawer');
+      if (show) {
+        renderDirectoryList();
+        drawer.classList.remove('hidden');
+      } else {
+        drawer.classList.add('hidden');
+      }
+    }
+
+    function renderDirectoryList() {
+      const query = (document.getElementById('dir-search').value || '').toLowerCase();
+      const listEl = document.getElementById('directory-list');
+      listEl.innerHTML = '';
+
+      const matches = PROFILES.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        (p.organization || '').toLowerCase().includes(query)
+      );
+
+      if (matches.length === 0) {
+        listEl.innerHTML = `<div class="text-xs text-slate-400 text-center py-6">No profiles found. Add profiles via your backend.</div>`;
+        return;
+      }
+
+      matches.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'p-2.5 rounded-xl border border-slate-200 hover:border-red-400 cursor-pointer flex items-center justify-between transition bg-slate-50/50';
+        item.innerHTML = `
+          <div>
+            <div class="text-xs font-bold text-slate-900">${p.name}</div>
+            <div class="text-[11px] text-red-600 font-medium">${p.organization || 'Unassigned'}</div>
+          </div>
+          <i class="fa-solid fa-location-crosshairs text-slate-400 text-xs"></i>
+        `;
+        item.onclick = () => {
+          map.flyTo([p.lat, p.lng], 12, { duration: 0.7 });
+          openInspector(p);
+        };
+        listEl.appendChild(item);
+      });
+    }
+
+    // =========================================================================
+    // 5. BACKEND DATA INGESTION (SUPPORTS WORDPRESS, JSON FILE, OR POSTMESSAGE)
+    // =========================================================================
+    function normalizeProfile(raw, idx) {
+      const lat = parseFloat(raw.lat ?? raw.latitude ?? raw.lattitude ?? raw.meta?.Lattitude ?? raw.meta?.latitude);
+      const lng = parseFloat(raw.lng ?? raw.longitude ?? raw.meta?.Longitude ?? raw.meta?.longitude);
+      if (isNaN(lat) || isNaN(lng)) return null;
+
+      let connections = raw.connections || raw.customFields?.connections || [];
+      if (typeof connections === 'string') {
+        connections = connections.split(',').map(s => s.trim()).filter(Boolean);
+      }
+
+      return {
+        id: String(raw.id || `prof-${idx + 1}`),
+        name: raw.name || raw.title?.rendered || 'Unnamed Profile',
+        lat,
+        lng,
+        organization: raw.organization || raw.org || raw.meta?.Organization || 'Unassigned',
+        photo: raw.photo || raw.avatar || '',
+        bio: raw.bio || '',
+        connections,
+        customFields: raw.customFields || raw.meta || {}
+      };
+    }
+
+    function applyProfilesToMap(rawList) {
+      PROFILES = (rawList || []).map(normalizeProfile).filter(Boolean);
+
+      // Update top badge count
+      document.getElementById('profile-count-badge').textContent = PROFILES.length;
+
+      // Update Organization Filter Dropdown
+      const orgSelect = document.getElementById('select-org-filter');
+      const orgs = [...new Set(PROFILES.map(p => p.organization || 'Unassigned'))].sort();
+      orgSelect.innerHTML = `<option value="ALL">All Orgs (${orgs.length})</option>`;
+      orgs.forEach(org => {
+        orgSelect.innerHTML += `<option value="${org}">${org}</option>`;
+      });
+
+      renderNetwork();
+      renderDirectoryList();
+    }
+
+    async function syncProfiles() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const apiEndpoint = urlParams.get('api') || './profiles.json';
+
+      try {
+        const res = await fetch(apiEndpoint, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          applyProfilesToMap(Array.isArray(data) ? data : (data.profiles || []));
+        }
+      } catch (e) {
+        // Starts clean if no external JSON or API endpoint is connected yet
+        console.log('Map initialized clean. Waiting for backend profile data.');
+      }
+    }
+
+    // Listen for live profile data sent directly from a WordPress HTML block via postMessage
+    window.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'GEONET_LOAD_PROFILES' && Array.isArray(event.data.profiles)) {
+        applyProfilesToMap(event.data.profiles);
+      }
     });
+
+    // Initialize clean map on load
+    updateZoomUI();
+    syncProfiles();
   </script>
 </body>
 </html>
