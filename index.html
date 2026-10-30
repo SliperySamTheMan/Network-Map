@@ -38,7 +38,6 @@
     .mono {
       font-family: 'JetBrains Mono', monospace;
     }
-    /* Custom Marker Styling */
     .geonet-cluster-marker {
       background: #ef4444;
       color: #ffffff;
@@ -99,7 +98,6 @@
       </span>
     </div>
 
-    <!-- Right Header Controls -->
     <div class="flex items-center gap-3">
       <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
         <button id="btn-view-map" onclick="toggleDirectory(false)" class="px-3 py-1.5 rounded-lg bg-white text-red-600 shadow-sm text-sm font-semibold flex items-center gap-1.5">
@@ -138,8 +136,8 @@
           </div>
         </div>
 
-        <p id="stage-description" class="text-xs text-slate-600 leading-relaxed mb-3">
-           Google Maps light view active. Zoom to <strong>Zoom 7+</strong> for regional clusters or <strong>Zoom 10+</strong> to inspect individual networked profiles.
+        <p class="text-xs text-slate-600 leading-relaxed mb-3">
+          Google Maps light view active. Zoom to <strong>Zoom 7+</strong> for regional clusters or <strong>Zoom 10+</strong> to inspect individual networked profiles.
         </p>
 
         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
@@ -162,10 +160,9 @@
       <div class="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-slate-200/80 pointer-events-auto">
         <div class="flex items-center justify-between mb-2.5">
           <h3 class="text-xs font-extrabold text-slate-900">Map Layers & Network Style</h3>
-          <span id="sync-status" class="text-[10px] font-medium text-emerald-600">Live Backend</span>
+          <span class="text-[10px] font-medium text-emerald-600">Live Backend</span>
         </div>
 
-        <!-- Map Tile Selector (Google Maps Light Default) -->
         <div class="grid grid-cols-3 bg-slate-100 p-1 rounded-xl border border-slate-200 mb-3 text-xs font-semibold">
           <button onclick="switchBaseMap('googleLight')" id="layer-googleLight" class="py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition">
             Google Light
@@ -178,13 +175,11 @@
           </button>
         </div>
 
-        <!-- Cluster Toggle -->
         <label class="flex items-center justify-between text-xs text-slate-700 font-medium mb-2.5 cursor-pointer">
           <span>Cluster crowded towns (Zoom &lt; 10)</span>
           <input type="checkbox" id="toggle-clustering" checked onchange="renderNetwork()" class="w-4 h-4 accent-red-600 rounded cursor-pointer" />
         </label>
 
-        <!-- Node Style Selector -->
         <div class="flex items-center justify-between gap-2 mb-2.5">
           <label class="text-xs text-slate-600 font-medium">Node Style:</label>
           <select id="select-node-style" onchange="renderNetwork()" class="text-xs font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none">
@@ -193,7 +188,6 @@
           </select>
         </div>
 
-        <!-- Organization Filter -->
         <div class="flex items-center justify-between gap-2 mb-3">
           <label class="text-xs text-slate-600 font-medium">Filter by Organization:</label>
           <select id="select-org-filter" onchange="renderNetwork()" class="text-xs font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none max-w-[155px] truncate">
@@ -201,7 +195,6 @@
           </select>
         </div>
 
-        <!-- Link Legend -->
         <div class="pt-2.5 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-600 font-medium">
           <div class="flex items-center gap-2">
             <span class="w-4 h-0.5 bg-red-600 inline-block"></span>
@@ -215,7 +208,7 @@
       </div>
     </div>
 
-    <!-- PROFILE INSPECTOR MODAL / CARD (Right Side) -->
+    <!-- PROFILE INSPECTOR CARD -->
     <div id="profile-inspector" class="hidden absolute top-4 right-4 z-20 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-5">
       <div class="flex items-start justify-between gap-3 mb-3">
         <div class="flex items-center gap-3">
@@ -252,7 +245,23 @@
 
   <script>
     // =========================================================================
-    // 1. MAP INITIALIZATION & GOOGLE MAPS LIGHT TILES
+    // BACKEND PROFILES LIST
+    // Add, edit, or remove profiles here (or load via ./profiles.json)
+    // =========================================================================
+    const BACKEND_PROFILES = [
+      {
+        id: "john-smith",
+        name: "John Smith",
+        lat: 40.7549,
+        lng: -75.9840,
+        organization: "city hall person",
+        bio: "Added from backend profile data.",
+        connections: [] // Add names here (e.g. ["Jane Doe"]) to draw solid red Inter-Org links
+      }
+    ];
+
+    // =========================================================================
+    // MAP INITIALIZATION (GOOGLE MAPS LIGHT)
     // =========================================================================
     const map = L.map('map', {
       center: [39.8283, -98.5795],
@@ -265,17 +274,14 @@
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     const tileLayers = {
-      // Clean Google Maps Light Standard Road Map (No API key watermark)
       googleLight: L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
         maxZoom: 20,
         attribution: '&copy; Google Maps'
       }),
-      // Google Maps Terrain with light shading
       googleTerrain: L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
         maxZoom: 20,
         attribution: '&copy; Google Maps Terrain'
       }),
-      // Esri World Light Gray Canvas (Ultra-minimal clean background)
       cleanLight: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 16,
         attribution: 'Tiles &copy; Esri'
@@ -283,31 +289,21 @@
     };
 
     let currentLayer = tileLayers.googleLight.addTo(map);
+    const linksLayerGroup = L.layerGroup().addTo(map);
+    const nodesLayerGroup = L.layerGroup().addTo(map);
+    let PROFILES = [];
 
     function switchBaseMap(layerKey) {
       map.removeLayer(currentLayer);
       currentLayer = tileLayers[layerKey].addTo(map);
-
       ['googleLight', 'googleTerrain', 'cleanLight'].forEach(key => {
         const btn = document.getElementById(`layer-${key}`);
-        if (key === layerKey) {
-          btn.className = 'py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition';
-        } else {
-          btn.className = 'py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
-        }
+        btn.className = key === layerKey
+          ? 'py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition'
+          : 'py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
       });
     }
 
-    // Layer groups for markers and network lines
-    const linksLayerGroup = L.layerGroup().addTo(map);
-    const nodesLayerGroup = L.layerGroup().addTo(map);
-
-    // Master array of profiles (Starts 100% empty—no fake profiles!)
-    let PROFILES = [];
-
-    // =========================================================================
-    // 2. MULTI-STAGE ZOOM CONTROLS
-    // =========================================================================
     function setZoomStage(targetZoom) {
       map.flyTo(map.getCenter(), targetZoom, { duration: 0.6 });
     }
@@ -315,7 +311,6 @@
     function updateZoomUI() {
       const z = map.getZoom();
       document.getElementById('zoom-level-indicator').textContent = z;
-
       const b1 = document.getElementById('stage-btn-1');
       const b2 = document.getElementById('stage-btn-2');
       const b3 = document.getElementById('stage-btn-3');
@@ -341,9 +336,6 @@
       renderNetwork();
     });
 
-    // =========================================================================
-    // 3. NETWORK GRAPH & CLUSTERING ENGINE
-    // =========================================================================
     function getFilteredProfiles() {
       const selectedOrg = document.getElementById('select-org-filter').value;
       if (selectedOrg === 'ALL') return PROFILES;
@@ -353,15 +345,12 @@
     function buildNetworkEdges(profiles) {
       const edges = [];
       const seen = new Set();
-
       for (let i = 0; i < profiles.length; i++) {
         for (let j = i + 1; j < profiles.length; j++) {
-          const a = profiles[i];
-          const b = profiles[j];
+          const a = profiles[i], b = profiles[j];
           const pairKey = [a.id, b.id].sort().join('--');
           if (seen.has(pairKey)) continue;
 
-          // 1. Check explicit Inter-Org / Direct connections by ID or Name
           const aConns = (a.connections || []).map(c => String(c).toLowerCase().trim());
           const bConns = (b.connections || []).map(c => String(c).toLowerCase().trim());
 
@@ -371,10 +360,8 @@
             bConns.includes(String(a.id).toLowerCase()) ||
             bConns.includes(String(a.name).toLowerCase());
 
-          // 2. Check Same-Organization automatic link
           const isSameOrg =
-            a.organization &&
-            b.organization &&
+            a.organization && b.organization &&
             a.organization.toLowerCase().trim() === b.organization.toLowerCase().trim() &&
             a.organization.toLowerCase().trim() !== 'unassigned';
 
@@ -395,31 +382,25 @@
       nodesLayerGroup.clearLayers();
 
       const activeProfiles = getFilteredProfiles();
+      if (activeProfiles.length === 0) return;
+
       const zoom = map.getZoom();
       const clusterEnabled = document.getElementById('toggle-clustering').checked;
       const nodeStyle = document.getElementById('select-node-style').value;
 
-      if (activeProfiles.length === 0) return;
-
-      // Draw Network Connection Lines
       const edges = buildNetworkEdges(activeProfiles);
       edges.forEach(edge => {
-        L.polyline(
-          [[edge.from.lat, edge.from.lng], [edge.to.lat, edge.to.lng]],
-          {
-            color: '#ef4444',
-            weight: edge.type === 'inter-org' ? 2.5 : 2,
-            opacity: 0.75,
-            dashArray: edge.type === 'same-org' ? '6, 6' : null
-          }
-        ).addTo(linksLayerGroup);
+        L.polyline([[edge.from.lat, edge.from.lng], [edge.to.lat, edge.to.lng]], {
+          color: '#ef4444',
+          weight: edge.type === 'inter-org' ? 2.5 : 2,
+          opacity: 0.75,
+          dashArray: edge.type === 'same-org' ? '6, 6' : null
+        }).addTo(linksLayerGroup);
       });
 
-      // Cluster mode when zoomed out (Zoom < 10)
       if (clusterEnabled && zoom < 10) {
-        const gridSize = zoom <= 6 ? 4.5 : 1.2; // Degrees grid cell
+        const gridSize = zoom <= 6 ? 4.5 : 1.2;
         const buckets = {};
-
         activeProfiles.forEach(p => {
           const key = `${Math.round(p.lat / gridSize)}_${Math.round(p.lng / gridSize)}`;
           if (!buckets[key]) buckets[key] = [];
@@ -440,7 +421,6 @@
               iconSize: [size, size],
               iconAnchor: [size / 2, size / 2]
             });
-
             const m = L.marker([avgLat, avgLng], { icon });
             m.on('click', () => {
               if (group.length === 1) {
@@ -454,32 +434,21 @@
           }
         });
       } else {
-        // Individual profile nodes (Zoom 10+ or clustering unchecked)
-        activeProfiles.forEach(profile => {
-          createProfileMarker(profile, nodeStyle).addTo(nodesLayerGroup);
-        });
+        activeProfiles.forEach(p => createProfileMarker(p, nodeStyle).addTo(nodesLayerGroup));
       }
     }
 
     function createProfileMarker(profile, styleType) {
       const avatarUrl = profile.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=ef4444&color=fff&bold=true`;
-
-      let html = '';
-      if (styleType === 'pin') {
-        html = `
-          <div class="geonet-pin-marker" title="${profile.name}">
-            <img src="${avatarUrl}" class="w-full h-full object-cover" />
-          </div>`;
-      } else {
-        html = `
-          <div class="geonet-card-marker">
+      const html = styleType === 'pin'
+        ? `<div class="geonet-pin-marker" title="${profile.name}"><img src="${avatarUrl}" class="w-full h-full object-cover" /></div>`
+        : `<div class="geonet-card-marker">
             <img src="${avatarUrl}" class="w-7 h-7 rounded-full object-cover border border-slate-300" />
             <div class="pr-1">
               <div class="text-xs font-bold text-slate-900 leading-none">${profile.name}</div>
               <div class="text-[10px] font-semibold text-red-600 leading-tight">${profile.organization || 'Member'}</div>
             </div>
           </div>`;
-      }
 
       const icon = L.divIcon({
         className: '',
@@ -488,42 +457,21 @@
         iconAnchor: styleType === 'pin' ? [18, 18] : [20, 18]
       });
 
-      const marker = L.marker([profile.lat, profile.lng], { icon });
-      marker.on('click', () => openInspector(profile));
-      return marker;
+      return L.marker([profile.lat, profile.lng], { icon }).on('click', () => openInspector(profile));
     }
 
-    // =========================================================================
-    // 4. PROFILE INSPECTOR & DIRECTORY DRAWER
-    // =========================================================================
     function openInspector(profile) {
       const avatarUrl = profile.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=ef4444&color=fff&bold=true`;
       document.getElementById('inspector-photo').src = avatarUrl;
       document.getElementById('inspector-name').textContent = profile.name;
       document.getElementById('inspector-org').textContent = profile.organization || 'Unassigned';
       document.getElementById('inspector-bio').textContent = profile.bio || 'No biography provided.';
-
-      // Populate coordinates and any dynamic custom fields from backend
-      const metaContainer = document.getElementById('inspector-meta');
-      metaContainer.innerHTML = `
+      document.getElementById('inspector-meta').innerHTML = `
         <div class="flex justify-between text-slate-500">
           <span>Coordinates:</span>
           <span class="mono text-slate-800 font-semibold">${profile.lat.toFixed(4)}, ${profile.lng.toFixed(4)}</span>
-        </div>
-      `;
+        </div>`;
 
-      if (profile.customFields) {
-        Object.entries(profile.customFields).forEach(([key, val]) => {
-          if (['lattitude', 'latitude', 'longitude', 'organization', 'connections'].includes(key.toLowerCase()) || !val) return;
-          metaContainer.innerHTML += `
-            <div class="flex justify-between text-slate-500">
-              <span class="capitalize">${key.replace(/_/g, ' ')}:</span>
-              <span class="text-slate-800 font-semibold">${val}</span>
-            </div>`;
-        });
-      }
-
-      // Show network peers
       const edges = buildNetworkEdges(PROFILES).filter(e => e.from.id === profile.id || e.to.id === profile.id);
       const connContainer = document.getElementById('inspector-connections');
       connContainer.innerHTML = '';
@@ -543,7 +491,6 @@
           connContainer.appendChild(badge);
         });
       }
-
       document.getElementById('profile-inspector').classList.remove('hidden');
     }
 
@@ -565,14 +512,13 @@
       const query = (document.getElementById('dir-search').value || '').toLowerCase();
       const listEl = document.getElementById('directory-list');
       listEl.innerHTML = '';
-
       const matches = PROFILES.filter(p =>
         p.name.toLowerCase().includes(query) ||
         (p.organization || '').toLowerCase().includes(query)
       );
 
       if (matches.length === 0) {
-        listEl.innerHTML = `<div class="text-xs text-slate-400 text-center py-6">No profiles found. Add profiles via your backend.</div>`;
+        listEl.innerHTML = `<div class="text-xs text-slate-400 text-center py-6">No profiles found.</div>`;
         return;
       }
 
@@ -584,8 +530,7 @@
             <div class="text-xs font-bold text-slate-900">${p.name}</div>
             <div class="text-[11px] text-red-600 font-medium">${p.organization || 'Unassigned'}</div>
           </div>
-          <i class="fa-solid fa-location-crosshairs text-slate-400 text-xs"></i>
-        `;
+          <i class="fa-solid fa-location-crosshairs text-slate-400 text-xs"></i>`;
         item.onclick = () => {
           map.flyTo([p.lat, p.lng], 12, { duration: 0.7 });
           openInspector(p);
@@ -594,39 +539,10 @@
       });
     }
 
-    // =========================================================================
-    // 5. BACKEND DATA INGESTION (SUPPORTS WORDPRESS, JSON FILE, OR POSTMESSAGE)
-    // =========================================================================
-    function normalizeProfile(raw, idx) {
-      const lat = parseFloat(raw.lat ?? raw.latitude ?? raw.lattitude ?? raw.meta?.Lattitude ?? raw.meta?.latitude);
-      const lng = parseFloat(raw.lng ?? raw.longitude ?? raw.meta?.Longitude ?? raw.meta?.longitude);
-      if (isNaN(lat) || isNaN(lng)) return null;
-
-      let connections = raw.connections || raw.customFields?.connections || [];
-      if (typeof connections === 'string') {
-        connections = connections.split(',').map(s => s.trim()).filter(Boolean);
-      }
-
-      return {
-        id: String(raw.id || `prof-${idx + 1}`),
-        name: raw.name || raw.title?.rendered || 'Unnamed Profile',
-        lat,
-        lng,
-        organization: raw.organization || raw.org || raw.meta?.Organization || 'Unassigned',
-        photo: raw.photo || raw.avatar || '',
-        bio: raw.bio || '',
-        connections,
-        customFields: raw.customFields || raw.meta || {}
-      };
-    }
-
     function applyProfilesToMap(rawList) {
-      PROFILES = (rawList || []).map(normalizeProfile).filter(Boolean);
-
-      // Update top badge count
+      PROFILES = (rawList || []).filter(p => !isNaN(parseFloat(p.lat)) && !isNaN(parseFloat(p.lng)));
       document.getElementById('profile-count-badge').textContent = PROFILES.length;
 
-      // Update Organization Filter Dropdown
       const orgSelect = document.getElementById('select-org-filter');
       const orgs = [...new Set(PROFILES.map(p => p.organization || 'Unassigned'))].sort();
       orgSelect.innerHTML = `<option value="ALL">All Orgs (${orgs.length})</option>`;
@@ -639,9 +555,11 @@
     }
 
     async function syncProfiles() {
+      // Load built-in BACKEND_PROFILES first, or override if ?api= or profiles.json exists
+      applyProfilesToMap(BACKEND_PROFILES);
+
       const urlParams = new URLSearchParams(window.location.search);
       const apiEndpoint = urlParams.get('api') || './profiles.json';
-
       try {
         const res = await fetch(apiEndpoint, { cache: 'no-store' });
         if (res.ok) {
@@ -649,19 +567,10 @@
           applyProfilesToMap(Array.isArray(data) ? data : (data.profiles || []));
         }
       } catch (e) {
-        // Starts clean if no external JSON or API endpoint is connected yet
-        console.log('Map initialized clean. Waiting for backend profile data.');
+        // Uses BACKEND_PROFILES when no external JSON file is present
       }
     }
 
-    // Listen for live profile data sent directly from a WordPress HTML block via postMessage
-    window.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'GEONET_LOAD_PROFILES' && Array.isArray(event.data.profiles)) {
-        applyProfilesToMap(event.data.profiles);
-      }
-    });
-
-    // Initialize clean map on load
     updateZoomUI();
     syncProfiles();
   </script>
