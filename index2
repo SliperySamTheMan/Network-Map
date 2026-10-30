@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoNet // Interactive US Organizational Network Atlas</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      overflow: hidden;
+    }
+    #map {
+      height: calc(100vh - 64px);
+      width: 100%;
+      z-index: 1;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom Marker Styling */
+    .geonet-cluster-marker {
+      background: #ef4444;
+      color: #ffffff;
+      border: 3px solid #ffffff;
+      border-radius: 9999px;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 14px;
+      transition: transform 0.15s ease;
+    }
+    .geonet-cluster-marker:hover {
+      transform: scale(1.1);
+    }
+    .geonet-card-marker {
+      background: #ffffff;
+      border: 2px solid #0f172a;
+      border-radius: 9999px;
+      padding: 3px 10px 3px 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .geonet-card-marker:hover {
+      border-color: #ef4444;
+      transform: translateY(-2px);
+    }
+    .geonet-pin-marker {
+      width: 36px;
+      height: 36px;
+      border-radius: 9999px;
+      border: 3px solid #ef4444;
+      background: #ffffff;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen select-none">
+
+  <!-- TOP HEADER BAR -->
+  <header class="h-16 bg-white border-b border-slate-200 px-5 flex items-center justify-between z-20 shadow-sm">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-sm">
+        <i class="fa-solid fa-diagram-project text-lg"></i>
+      </div>
+      <span class="font-extrabold text-xl tracking-tight text-slate-900">GeoNet</span>
+      <span class="text-[11px] font-bold tracking-widest uppercase px-2.5 py-1 rounded-full bg-red-50 text-red-600 border border-red-100">
+        USA ATLAS
+      </span>
+    </div>
+
+    <!-- Right Header Controls -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <button id="btn-view-map" onclick="toggleDirectory(false)" class="px-3 py-1.5 rounded-lg bg-white text-red-600 shadow-sm text-sm font-semibold flex items-center gap-1.5">
+          <i class="fa-regular fa-map"></i>
+        </button>
+        <button id="btn-view-dir" onclick="toggleDirectory(true)" class="px-3 py-1.5 rounded-lg text-slate-700 hover:text-slate-900 text-sm font-semibold flex items-center gap-2" title="View Profile Directory">
+          <i class="fa-solid fa-users text-slate-500"></i>
+          <span id="profile-count-badge" class="px-2 py-0.5 text-xs rounded-full bg-slate-200 text-slate-800 font-bold">0</span>
+        </button>
+      </div>
+      <button onclick="syncProfiles()" class="w-9 h-9 rounded-full bg-slate-900 text-emerald-400 flex items-center justify-center shadow hover:bg-slate-800 transition" title="Refresh Backend Data">
+        <i class="fa-solid fa-rotate text-xs"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN MAP WORKSPACE -->
+  <div class="relative flex-1 w-full">
+    <div id="map"></div>
+
+    <!-- LEFT FLOATING SIDEBAR CONTROLS -->
+    <div class="absolute top-4 left-4 z-10 w-80 max-w-[calc(100vw-2rem)] flex flex-col gap-3 pointer-events-none">
+      
+      <!-- CARD 1: ZOOM RESOLUTION STAGES -->
+      <div class="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-slate-200/80 pointer-events-auto">
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+            <h2 id="stage-title" class="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+              LEVEL 1: UNITED STATES OVERVIEW (ZOOM 3–6)
+            </h2>
+          </div>
+          <div class="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-center shrink-0">
+            <div class="text-[10px] font-semibold text-slate-500 uppercase">Zoom</div>
+            <div id="zoom-level-indicator" class="text-xs font-extrabold text-slate-800 mono">4</div>
+          </div>
+        </div>
+
+        <p id="stage-description" class="text-xs text-slate-600 leading-relaxed mb-3">
+           Google Maps light view active. Zoom to <strong>Zoom 7+</strong> for regional clusters or <strong>Zoom 10+</strong> to inspect individual networked profiles.
+        </p>
+
+        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+          ZOOM RESOLUTION STAGES
+        </div>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button onclick="setZoomStage(4)" id="stage-btn-1" class="py-2 px-2 rounded-xl text-xs font-bold border transition text-center bg-red-600 text-white border-red-600">
+            1. National<br><span class="text-[10px] opacity-80">(Z4)</span>
+          </button>
+          <button onclick="setZoomStage(8)" id="stage-btn-2" class="py-2 px-2 rounded-xl text-xs font-bold border transition text-center bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">
+            2. Clusters<br><span class="text-[10px] opacity-75">(Z8)</span>
+          </button>
+          <button onclick="setZoomStage(11)" id="stage-btn-3" class="py-2 px-2 rounded-xl text-xs font-bold border transition text-center bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100">
+            3. Profiles<br><span class="text-[10px] opacity-75">(Z11)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- CARD 2: MAP LAYERS & NETWORK STYLE -->
+      <div class="bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-slate-200/80 pointer-events-auto">
+        <div class="flex items-center justify-between mb-2.5">
+          <h3 class="text-xs font-extrabold text-slate-900">Map Layers & Network Style</h3>
+          <span id="sync-status" class="text-[10px] font-medium text-emerald-600">Live Backend</span>
+        </div>
+
+        <!-- Map Tile Selector (Google Maps Light Default) -->
+        <div class="grid grid-cols-3 bg-slate-100 p-1 rounded-xl border border-slate-200 mb-3 text-xs font-semibold">
+          <button onclick="switchBaseMap('googleLight')" id="layer-googleLight" class="py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition">
+            Google Light
+          </button>
+          <button onclick="switchBaseMap('googleTerrain')" id="layer-googleTerrain" class="py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
+            Terrain
+          </button>
+          <button onclick="switchBaseMap('cleanLight')" id="layer-cleanLight" class="py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition">
+            Minimal
+          </button>
+        </div>
+
+        <!-- Cluster Toggle -->
+        <label class="flex items-center justify-between text-xs text-slate-700 font-medium mb-2.5 cursor-pointer">
+          <span>Cluster crowded towns (Zoom &lt; 10)</span>
+          <input type="checkbox" id="toggle-clustering" checked onchange="renderNetwork()" class="w-4 h-4 accent-red-600 rounded cursor-pointer" />
+        </label>
+
+        <!-- Node Style Selector -->
+        <div class="flex items-center justify-between gap-2 mb-2.5">
+          <label class="text-xs text-slate-600 font-medium">Node Style:</label>
+          <select id="select-node-style" onchange="renderNetwork()" class="text-xs font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none">
+            <option value="card">Photo + Name Card</option>
+            <option value="pin">Avatar Pin Only</option>
+          </select>
+        </div>
+
+        <!-- Organization Filter -->
+        <div class="flex items-center justify-between gap-2 mb-3">
+          <label class="text-xs text-slate-600 font-medium">Filter by Organization:</label>
+          <select id="select-org-filter" onchange="renderNetwork()" class="text-xs font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-800 outline-none max-w-[155px] truncate">
+            <option value="ALL">All Orgs (0)</option>
+          </select>
+        </div>
+
+        <!-- Link Legend -->
+        <div class="pt-2.5 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-600 font-medium">
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-0.5 bg-red-600 inline-block"></span>
+            <span>Inter-Org Link</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-4 h-0.5 border-b-2 border-dashed border-red-500 inline-block"></span>
+            <span>Same-Org Link</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE INSPECTOR MODAL / CARD (Right Side) -->
+    <div id="profile-inspector" class="hidden absolute top-4 right-4 z-20 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-5">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div class="flex items-center gap-3">
+          <img id="inspector-photo" src="" alt="Profile" class="w-12 h-12 rounded-full object-cover border-2 border-red-500" />
+          <div>
+            <h4 id="inspector-name" class="font-bold text-slate-900 text-base leading-tight"></h4>
+            <span id="inspector-org" class="inline-block mt-0.5 text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded-full"></span>
+          </div>
+        </div>
+        <button onclick="closeInspector()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p id="inspector-bio" class="text-xs text-slate-600 leading-relaxed mb-3"></p>
+      <div id="inspector-meta" class="space-y-1 text-xs border-t border-slate-100 pt-2.5 mb-3"></div>
+      <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Network Connections</div>
+      <div id="inspector-connections" class="flex flex-wrap gap-1.5"></div>
+    </div>
+
+    <!-- DIRECTORY SLIDE-OVER DRAWER -->
+    <div id="directory-drawer" class="hidden absolute inset-y-0 right-0 z-20 w-80 bg-white border-l border-slate-200 shadow-2xl flex flex-col">
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between">
+        <h3 class="font-bold text-slate-900 text-sm">Active Map Profiles</h3>
+        <button onclick="toggleDirectory(false)" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="p-3 border-b border-slate-100">
+        <input id="dir-search" type="text" oninput="renderDirectoryList()" placeholder="Search name or organization..." class="w-full text-xs px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 outline-none focus:border-red-500" />
+      </div>
+      <div id="directory-list" class="flex-1 overflow-y-auto p-3 space-y-2"></div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. MAP INITIALIZATION & GOOGLE MAPS LIGHT TILES
+    // =========================================================================
+    const map = L.map('map', {
+      center: [39.8283, -98.5795],
+      zoom: 4,
+      minZoom: 3,
+      maxZoom: 18,
+      zoomControl: false
+    });
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    const tileLayers = {
+      // Clean Google Maps Light Standard Road Map (No API key watermark)
+      googleLight: L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        attribution: '&copy; Google Maps'
+      }),
+      // Google Maps Terrain with light shading
+      googleTerrain: L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        attribution: '&copy; Google Maps Terrain'
+      }),
+      // Esri World Light Gray Canvas (Ultra-minimal clean background)
+      cleanLight: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 16,
+        attribution: 'Tiles &copy; Esri'
+      })
+    };
+
+    let currentLayer = tileLayers.googleLight.addTo(map);
+
+    function switchBaseMap(layerKey) {
+      map.removeLayer(currentLayer);
+      currentLayer = tileLayers[layerKey].addTo(map);
+
+      ['googleLight', 'googleTerrain', 'cleanLight'].forEach(key => {
+        const btn = document.getElementById(`layer-${key}`);
+        if (key === layerKey) {
+          btn.className = 'py-1.5 rounded-lg bg-white text-slate-900 shadow-sm transition';
+        } else {
+          btn.className = 'py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition';
+        }
+      });
+    }
+
+    // Layer groups for markers and network lines
+    const linksLayerGroup = L.layerGroup().addTo(map);
+    const nodesLayerGroup = L.layerGroup().addTo(map);
+
+    // Master array of profiles (Starts 100% empty—no fake profiles!)
+    let PROFILES = [];
+
+    // =========================================================================
+    // 2. MULTI-STAGE ZOOM CONTROLS
+    // =========================================================================
+    function setZoomStage(targetZoom) {
+      map.flyTo(map.getCenter(), targetZoom, { duration: 0.6 });
+    }
+
+    function updateZoomUI() {
+      const z = map.getZoom();
+      document.getElementById('zoom-level-indicator').textContent = z;
+
+      const b1 = document.getElementById('stage-btn-1');
+      const b2 = document.getElementById('stage-btn-2');
+      const b3 = document.getElementById('stage-btn-3');
+      const title = document.getElementById('stage-title');
+
+      const activeClass = 'py-2 px-2 rounded-xl text-xs font-bold border transition text-center bg-red-600 text-white border-red-600';
+      const idleClass = 'py-2 px-2 rounded-xl text-xs font-bold border transition text-center bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100';
+
+      if (z <= 6) {
+        title.textContent = 'LEVEL 1: UNITED STATES OVERVIEW (ZOOM 3–6)';
+        b1.className = activeClass; b2.className = idleClass; b3.className = idleClass;
+      } else if (z <= 9) {
+        title.textContent = 'LEVEL 2: REGIONAL CLUSTERS (ZOOM 7–9)';
+        b1.className = idleClass; b2.className = activeClass; b3.className = idleClass;
+      } else {
+        title.textContent = 'LEVEL 3: INDIVIDUAL PROFILES (ZOOM 10+)';
+        b1.className = idleClass; b2.className = idleClass; b3.className = activeClass;
+      }
+    }
+
+    map.on('zoomend', () => {
+      updateZoomUI();
+      renderNetwork();
+    });
+
+    // =========================================================================
+    // 3. NETWORK GRAPH & CLUSTERING ENGINE
+    // =========================================================================
+    function getFilteredProfiles() {
+      const selectedOrg = document.getElementById('select-org-filter').value;
+      if (selectedOrg === 'ALL') return PROFILES;
+      return PROFILES.filter(p => (p.organization || 'Unassigned') === selectedOrg);
+    }
+
+    function buildNetworkEdges(profiles) {
+      const edges = [];
+      const seen = new Set();
+
+      for (let i = 0; i < profiles.length; i++) {
+        for (let j = i + 1; j < profiles.length; j++) {
+          const a = profiles[i];
+          const b = profiles[j];
+          const pairKey = [a.id, b.id].sort().join('--');
+          if (seen.has(pairKey)) continue;
+
+          // 1. Check explicit Inter-Org / Direct connections by ID or Name
+          const aConns = (a.connections || []).map(c => String(c).toLowerCase().trim());
+          const bConns = (b.connections || []).map(c => String(c).toLowerCase().trim());
+
+          const isExplicitlyLinked =
+            aConns.includes(String(b.id).toLowerCase()) ||
+            aConns.includes(String(b.name).toLowerCase()) ||
+            bConns.includes(String(a.id).toLowerCase()) ||
+            bConns.includes(String(a.name).toLowerCase());
+
+          // 2. Check Same-Organization automatic link
+          const isSameOrg =
+            a.organization &&
+            b.organization &&
+            a.organization.toLowerCase().trim() === b.organization.toLowerCase().trim() &&
+            a.organization.toLowerCase().trim() !== 'unassigned';
+
+          if (isExplicitlyLinked) {
+            edges.push({ from: a, to: b, type: isSameOrg ? 'same-org' : 'inter-org' });
+            seen.add(pairKey);
+          } else if (isSameOrg) {
+            edges.push({ from: a, to: b, type: 'same-org' });
+            seen.add(pairKey);
+          }
+        }
+      }
+      return edges;
+    }
+
+    function renderNetwork() {
+      linksLayerGroup.clearLayers();
+      nodesLayerGroup.clearLayers();
+
+      const activeProfiles = getFilteredProfiles();
+      const zoom = map.getZoom();
+      const clusterEnabled = document.getElementById('toggle-clustering').checked;
+      const nodeStyle = document.getElementById('select-node-style').value;
+
+      if (activeProfiles.length === 0) return;
+
+      // Draw Network Connection Lines
+      const edges = buildNetworkEdges(activeProfiles);
+      edges.forEach(edge => {
+        L.polyline(
+          [[edge.from.lat, edge.from.lng], [edge.to.lat, edge.to.lng]],
+          {
+            color: '#ef4444',
+            weight: edge.type === 'inter-org' ? 2.5 : 2,
+            opacity: 0.75,
+            dashArray: edge.type === 'same-org' ? '6, 6' : null
+          }
+        ).addTo(linksLayerGroup);
+      });
+
+      // Cluster mode when zoomed out (Zoom < 10)
+      if (clusterEnabled && zoom < 10) {
+        const gridSize = zoom <= 6 ? 4.5 : 1.2; // Degrees grid cell
+        const buckets = {};
+
+        activeProfiles.forEach(p => {
+          const key = `${Math.round(p.lat / gridSize)}_${Math.round(p.lng / gridSize)}`;
+          if (!buckets[key]) buckets[key] = [];
+          buckets[key].push(p);
+        });
+
+        Object.values(buckets).forEach(group => {
+          const avgLat = group.reduce((sum, p) => sum + p.lat, 0) / group.length;
+          const avgLng = group.reduce((sum, p) => sum + p.lng, 0) / group.length;
+
+          if (group.length === 1 && zoom >= 8) {
+            createProfileMarker(group[0], nodeStyle).addTo(nodesLayerGroup);
+          } else {
+            const size = group.length > 9 ? 44 : 38;
+            const icon = L.divIcon({
+              className: '',
+              html: `<div class="geonet-cluster-marker" style="width:${size}px;height:${size}px;">${group.length}</div>`,
+              iconSize: [size, size],
+              iconAnchor: [size / 2, size / 2]
+            });
+
+            const m = L.marker([avgLat, avgLng], { icon });
+            m.on('click', () => {
+              if (group.length === 1) {
+                map.flyTo([group[0].lat, group[0].lng], 12, { duration: 0.6 });
+                openInspector(group[0]);
+              } else {
+                map.flyTo([avgLat, avgLng], Math.min(zoom + 3, 12), { duration: 0.6 });
+              }
+            });
+            m.addTo(nodesLayerGroup);
+          }
+        });
+      } else {
+        // Individual profile nodes (Zoom 10+ or clustering unchecked)
+        activeProfiles.forEach(profile => {
+          createProfileMarker(profile, nodeStyle).addTo(nodesLayerGroup);
+        });
+      }
+    }
+
+    function createProfileMarker(profile, styleType) {
+      const avatarUrl = profile.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=ef4444&color=fff&bold=true`;
+
+      let html = '';
+      if (styleType === 'pin') {
+        html = `
+          <div class="geonet-pin-marker" title="${profile.name}">
+            <img src="${avatarUrl}" class="w-full h-full object-cover" />
+          </div>`;
+      } else {
+        html = `
+          <div class="geonet-card-marker">
+            <img src="${avatarUrl}" class="w-7 h-7 rounded-full object-cover border border-slate-300" />
+            <div class="pr-1">
+              <div class="text-xs font-bold text-slate-900 leading-none">${profile.name}</div>
+              <div class="text-[10px] font-semibold text-red-600 leading-tight">${profile.organization || 'Member'}</div>
+            </div>
+          </div>`;
+      }
+
+      const icon = L.divIcon({
+        className: '',
+        html,
+        iconSize: null,
+        iconAnchor: styleType === 'pin' ? [18, 18] : [20, 18]
+      });
+
+      const marker = L.marker([profile.lat, profile.lng], { icon });
+      marker.on('click', () => openInspector(profile));
+      return marker;
+    }
+
+    // =========================================================================
+    // 4. PROFILE INSPECTOR & DIRECTORY DRAWER
+    // =========================================================================
+    function openInspector(profile) {
+      const avatarUrl = profile.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=ef4444&color=fff&bold=true`;
+      document.getElementById('inspector-photo').src = avatarUrl;
+      document.getElementById('inspector-name').textContent = profile.name;
+      document.getElementById('inspector-org').textContent = profile.organization || 'Unassigned';
+      document.getElementById('inspector-bio').textContent = profile.bio || 'No biography provided.';
+
+      // Populate coordinates and any dynamic custom fields from backend
+      const metaContainer = document.getElementById('inspector-meta');
+      metaContainer.innerHTML = `
+        <div class="flex justify-between text-slate-500">
+          <span>Coordinates:</span>
+          <span class="mono text-slate-800 font-semibold">${profile.lat.toFixed(4)}, ${profile.lng.toFixed(4)}</span>
+        </div>
+      `;
+
+      if (profile.customFields) {
+        Object.entries(profile.customFields).forEach(([key, val]) => {
+          if (['lattitude', 'latitude', 'longitude', 'organization', 'connections'].includes(key.toLowerCase()) || !val) return;
+          metaContainer.innerHTML += `
+            <div class="flex justify-between text-slate-500">
+              <span class="capitalize">${key.replace(/_/g, ' ')}:</span>
+              <span class="text-slate-800 font-semibold">${val}</span>
+            </div>`;
+        });
+      }
+
+      // Show network peers
+      const edges = buildNetworkEdges(PROFILES).filter(e => e.from.id === profile.id || e.to.id === profile.id);
+      const connContainer = document.getElementById('inspector-connections');
+      connContainer.innerHTML = '';
+
+      if (edges.length === 0) {
+        connContainer.innerHTML = `<span class="text-xs text-slate-400 italic">No linked profiles yet</span>`;
+      } else {
+        edges.forEach(edge => {
+          const peer = edge.from.id === profile.id ? edge.to : edge.from;
+          const badge = document.createElement('button');
+          badge.className = 'text-xs px-2.5 py-1 rounded-full bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-700 font-semibold border border-slate-200 transition';
+          badge.textContent = peer.name;
+          badge.onclick = () => {
+            map.flyTo([peer.lat, peer.lng], 12, { duration: 0.6 });
+            openInspector(peer);
+          };
+          connContainer.appendChild(badge);
+        });
+      }
+
+      document.getElementById('profile-inspector').classList.remove('hidden');
+    }
+
+    function closeInspector() {
+      document.getElementById('profile-inspector').classList.add('hidden');
+    }
+
+    function toggleDirectory(show) {
+      const drawer = document.getElementById('directory-drawer');
+      if (show) {
+        renderDirectoryList();
+        drawer.classList.remove('hidden');
+      } else {
+        drawer.classList.add('hidden');
+      }
+    }
+
+    function renderDirectoryList() {
+      const query = (document.getElementById('dir-search').value || '').toLowerCase();
+      const listEl = document.getElementById('directory-list');
+      listEl.innerHTML = '';
+
+      const matches = PROFILES.filter(p =>
+        p.name.toLowerCase().includes(query) ||
+        (p.organization || '').toLowerCase().includes(query)
+      );
+
+      if (matches.length === 0) {
+        listEl.innerHTML = `<div class="text-xs text-slate-400 text-center py-6">No profiles found. Add profiles via your backend.</div>`;
+        return;
+      }
+
+      matches.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'p-2.5 rounded-xl border border-slate-200 hover:border-red-400 cursor-pointer flex items-center justify-between transition bg-slate-50/50';
+        item.innerHTML = `
+          <div>
+            <div class="text-xs font-bold text-slate-900">${p.name}</div>
+            <div class="text-[11px] text-red-600 font-medium">${p.organization || 'Unassigned'}</div>
+          </div>
+          <i class="fa-solid fa-location-crosshairs text-slate-400 text-xs"></i>
+        `;
+        item.onclick = () => {
+          map.flyTo([p.lat, p.lng], 12, { duration: 0.7 });
+          openInspector(p);
+        };
+        listEl.appendChild(item);
+      });
+    }
+
+    // =========================================================================
+    // 5. BACKEND DATA INGESTION (SUPPORTS WORDPRESS, JSON FILE, OR POSTMESSAGE)
+    // =========================================================================
+    function normalizeProfile(raw, idx) {
+      const lat = parseFloat(raw.lat ?? raw.latitude ?? raw.lattitude ?? raw.
