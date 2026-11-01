@@ -249,11 +249,22 @@
     function closeSidebar() { document.getElementById('left-sidebar').classList.remove('active'); setTimeout(() => map.invalidateSize(), 50); }
 
     function applyProfilesToMap(rawList) {
-      PROFILES = rawList || [];
+      // THE FIX: Normalized coordinate extraction. Hunts for all potential keys, extracts the float, filters out NaNs.
+      PROFILES = (rawList || []).map(p => {
+        const rawLat = p.lat ?? p.latitude ?? p.lattitude ?? (p.customFields && (p.customFields.latitude || p.customFields.lattitude || p.customFields.lat));
+        const rawLng = p.lng ?? p.longitude ?? (p.customFields && (p.customFields.longitude || p.customFields.lng));
+        return {
+          ...p,
+          lat: parseFloat(rawLat),
+          lng: parseFloat(rawLng)
+        };
+      }).filter(p => !isNaN(p.lat) && !isNaN(p.lng)); // Safety catch: Drops profiles missing coordinates
+
       const orgSelect = document.getElementById('select-org-filter');
       const orgs = [...new Set(PROFILES.map(p => p.organization || 'Unassigned'))].sort();
       orgSelect.innerHTML = `<option value="ALL">All Orgs (${orgs.length})</option>`;
       orgs.forEach(org => { orgSelect.innerHTML += `<option value="${org}">${org}</option>`; });
+      
       renderNetwork();
     }
 
