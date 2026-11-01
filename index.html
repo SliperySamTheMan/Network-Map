@@ -5,16 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GeoNet // Interactive US Organizational Network Atlas</title>
 
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Google Fonts & Font Awesome -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-
-  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -22,103 +17,27 @@
     body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow: hidden; }
     #map-container { display: flex; height: calc(100vh - 56px); width: 100%; position: relative; }
     #map { flex: 1; height: 100%; z-index: 1; }
-    
     .leaflet-control-attribution, .leaflet-attribution-flag { display: none !important; }
     
-    /* Left Sidebar Styling - WIDENED TO 440px */
-    #left-sidebar {
-      width: 440px; 
-      background: white;
-      border-right: 4px solid #475569;
-      z-index: 20;
-      display: none;
-      flex-direction: column;
-      box-shadow: 4px 0 15px rgba(0,0,0,0.1);
-    }
+    #left-sidebar { width: 440px; background: white; border-right: 4px solid #475569; z-index: 20; display: none; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
     #left-sidebar.active { display: flex; }
 
-    /* Segmented Metric Bars */
     .metric-bar-container { position: relative; padding-bottom: 24px; margin-top: 10px; }
-    .metric-bar {
-      width: 100%;
-      height: 18px;
-      border-radius: 9px;
-      border: 2px solid #000;
-      background: linear-gradient(to right, 
-        #22c55e 0%, #22c55e 20%, 
-        #84cc16 20%, #84cc16 40%, 
-        #eab308 40%, #eab308 60%, 
-        #f97316 60%, #f97316 80%, 
-        #ef4444 80%, #ef4444 100%);
-      position: relative;
-    }
-    
-    /* Pointer Needle (Read-Only) */
-    .metric-marker {
-      position: absolute;
-      top: 16px;
-      width: 0;
-      height: 0;
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-bottom: 10px solid #000;
-      transform: translateX(-50%);
-      transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .metric-marker::after {
-      content: '';
-      position: absolute;
-      top: 10px;
-      left: -1px;
-      width: 2px;
-      height: 12px;
-      background-color: #000;
-    }
+    .metric-bar { width: 100%; height: 18px; border-radius: 9px; border: 2px solid #000; background: linear-gradient(to right, #22c55e 0%, #22c55e 20%, #84cc16 20%, #84cc16 40%, #eab308 40%, #eab308 60%, #f97316 60%, #f97316 80%, #ef4444 80%, #ef4444 100%); position: relative; }
+    .metric-marker { position: absolute; top: 16px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid #000; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .metric-marker::after { content: ''; position: absolute; top: 10px; left: -1px; width: 2px; height: 12px; background-color: #000; }
 
-    /* Draggable Canvas container */
-    #org-scroll-container {
-      flex: 1;
-      overflow: hidden; 
-      background: white;
-      border-top: 4px solid #000;
-      position: relative;
-    }
+    #org-scroll-container { flex: 1; overflow: hidden; background: white; border-top: 4px solid #000; position: relative; }
     .cursor-grab { cursor: grab; }
     .cursor-grabbing { cursor: grabbing; }
 
-    /* Org Chart Elements */
-    .org-canvas {
-      min-width: 700px;
-      min-height: 500px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
-    }
+    .org-canvas { min-width: 700px; min-height: 500px; display: flex; align-items: center; justify-content: center; padding: 40px; }
     .org-node { display: flex; flex-direction: column; align-items: center; text-align: center; }
-    .org-avatar {
-      width: 54px;
-      height: 54px;
-      border-radius: 8px;
-      background: #cbd5e1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 26px;
-      border: 3px solid #94a3b8;
-      margin-bottom: 6px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .org-avatar.active-target {
-      border-color: #9f1239;
-      background: #f87171;
-      border-width: 4px;
-    }
+    .org-avatar { width: 54px; height: 54px; border-radius: 8px; background: #cbd5e1; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; border: 3px solid #94a3b8; margin-bottom: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .org-avatar.active-target { border-color: #9f1239; background: #f87171; border-width: 4px; }
     .tree-line-v { width: 3px; height: 28px; background: #64748b; }
     .tree-line-h { width: 100%; height: 3px; background: #64748b; position: absolute; top: 0; }
 
-    /* Map Markers */
     .geonet-cluster-marker { background: #ef4444; color: #ffffff; border: 3px solid #ffffff; border-radius: 9999px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; transition: transform 0.15s ease; cursor: pointer; }
     .geonet-cluster-marker:hover { transform: scale(1.1); }
     .geonet-card-marker { background: #ffffff; border: 2px solid #0f172a; border-radius: 9999px; padding: 3px 10px 3px 4px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18); white-space: nowrap; transition: all 0.15s ease; cursor: pointer;}
@@ -127,7 +46,7 @@
 </head>
 <body class="flex flex-col h-screen select-none">
 
-  <!-- TOP HEADER BAR -->
+  <!-- TOP HEADER -->
   <header class="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between z-30 shadow-sm shrink-0">
     <div class="flex items-center gap-3">
       <div class="w-9 h-9 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-sm">
@@ -141,93 +60,55 @@
     </button>
   </header>
 
-  <!-- MAIN WORKSPACE -->
   <div id="map-container">
     
-    <!-- LEFT SIDEBAR: PROFILE & ORG CHART -->
+    <!-- LEFT SIDEBAR -->
     <div id="left-sidebar">
-      
-      <!-- Top Section: Data & Metrics -->
       <div class="p-5 relative">
         <button onclick="closeSidebar()" class="absolute top-2 right-3 text-slate-400 hover:text-slate-900 text-xl"><i class="fa-solid fa-xmark"></i></button>
         
-        <!-- Header with "See More" Button -->
         <div class="flex justify-between items-end border-b-[3px] border-black pb-2 mb-4 mt-2">
-          <h2 id="sb-name" class="text-3xl font-bold text-slate-900">John Smith</h2>
-          <a id="sb-seemore" href="#" target="_top" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-1.5 rounded-lg border-2 border-black shadow-sm text-sm transition-colors">
+          <h2 id="sb-name" class="text-3xl font-bold text-slate-900 truncate pr-2">Name</h2>
+          <a id="sb-seemore" href="#" target="_top" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-1.5 rounded-lg border-2 border-black shadow-sm text-sm transition-colors whitespace-nowrap">
             See More
           </a>
         </div>
         
-        <!-- Profile Info -->
         <div class="text-[14px] text-slate-800 space-y-1.5 mb-5 border-b-[3px] border-black pb-5 font-semibold">
           <div>Org: <span id="sb-org" class="font-normal text-slate-600">--------</span></div>
           <div>Sub group: <span id="sb-subgroup" class="font-normal text-slate-600">--------</span></div>
           <div>Etc: <span id="sb-etc" class="font-normal text-slate-600">--------</span></div>
         </div>
 
-        <!-- Metric Bars -->
         <div class="space-y-3 pb-2">
-          <div class="metric-bar-container">
-            <div class="metric-bar"><div id="sb-racism-marker" class="metric-marker" style="left: 0%;"></div></div>
-            <div class="text-[13px] font-bold text-center mt-3 text-slate-800">Racism</div>
-          </div>
-          <div class="metric-bar-container">
-            <div class="metric-bar"><div id="sb-sexism-marker" class="metric-marker" style="left: 0%;"></div></div>
-            <div class="text-[13px] font-bold text-center mt-3 text-slate-800">Sexism</div>
-          </div>
-          <div class="metric-bar-container">
-            <div class="metric-bar"><div id="sb-extremism-marker" class="metric-marker" style="left: 0%;"></div></div>
-            <div class="text-[13px] font-bold text-center mt-3 text-slate-800">Religious Extremism</div>
-          </div>
+          <div class="metric-bar-container"><div class="metric-bar"><div id="sb-racism-marker" class="metric-marker" style="left: 0%;"></div></div><div class="text-[13px] font-bold text-center mt-3 text-slate-800">Racism</div></div>
+          <div class="metric-bar-container"><div class="metric-bar"><div id="sb-sexism-marker" class="metric-marker" style="left: 0%;"></div></div><div class="text-[13px] font-bold text-center mt-3 text-slate-800">Sexism</div></div>
+          <div class="metric-bar-container"><div class="metric-bar"><div id="sb-extremism-marker" class="metric-marker" style="left: 0%;"></div></div><div class="text-[13px] font-bold text-center mt-3 text-slate-800">Religious Extremism</div></div>
         </div>
       </div>
 
-      <!-- Bottom Section: Draggable Mini Org Chart -->
+      <!-- ORG CHART -->
       <div id="org-scroll-container" class="cursor-grab">
         <div class="org-canvas">
           <div class="flex flex-col items-center">
-            
-            <!-- Supervisor -->
             <div class="org-node">
               <div class="org-avatar"><i class="fa-solid fa-user"></i></div>
               <div id="sb-supervisor-name" class="text-xs font-bold text-slate-700 text-center max-w-[90px] truncate">Supervisor</div>
             </div>
-            
             <div class="tree-line-v"></div>
-            
-            <!-- Target User -->
             <div class="org-node">
               <div class="org-avatar active-target"><i class="fa-solid fa-user"></i></div>
               <div id="sb-chart-name" class="text-xs font-extrabold text-slate-900 text-center max-w-[90px] truncate">Current</div>
             </div>
-            
-            <!-- Subordinates -->
             <div id="subordinates-container" class="w-full flex flex-col items-center hidden">
               <div class="tree-line-v"></div>
               <div class="relative w-full max-w-[320px] flex justify-between pt-8">
                 <div class="tree-line-h"></div>
-                
-                <div class="org-node relative -mt-8">
-                  <div class="tree-line-v h-8"></div>
-                  <div class="org-avatar"><i class="fa-solid fa-user"></i></div>
-                  <div id="sb-sub-1" class="text-xs font-bold text-slate-700 text-center max-w-[80px] truncate">Sub 1</div>
-                </div>
-                
-                <div class="org-node relative -mt-8">
-                  <div class="tree-line-v h-8"></div>
-                  <div class="org-avatar"><i class="fa-solid fa-user"></i></div>
-                  <div id="sb-sub-2" class="text-xs font-bold text-slate-700 text-center max-w-[80px] truncate">Sub 2</div>
-                </div>
-                
-                <div class="org-node relative -mt-8">
-                  <div class="tree-line-v h-8"></div>
-                  <div class="org-avatar"><i class="fa-solid fa-user"></i></div>
-                  <div id="sb-sub-3" class="text-xs font-bold text-slate-700 text-center max-w-[80px] truncate">Sub 3</div>
-                </div>
+                <div class="org-node relative -mt-8"><div class="tree-line-v h-8"></div><div class="org-avatar"><i class="fa-solid fa-user"></i></div><div id="sb-sub-1" class="text-xs font-bold text-slate-700 text-center max-w-[80px] truncate">Sub 1</div></div>
+                <div class="org-node relative -mt-8"><div class="tree-line-v h-8"></div><div class="org-avatar"><i class="fa-solid fa-user"></i></div><div id="sb-sub-2" class="text-xs font-bold text-slate-700 text-center max-w-[80px] truncate">Sub 2</div></div>
+                <div class="org-node relative -mt-8"><div class="tree-line-v h-8"></div><div class="org-avatar"><i class="fa-solid fa-user"></i></div><div id="sb-sub-3" class="text-xs font-bold text-slate-700 text-center max-w-[80px] truncate">Sub 3</div></div>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -236,7 +117,7 @@
     <!-- MAP AREA -->
     <div id="map"></div>
     
-    <!-- MAP CONTROLS OVERLAY -->
+    <!-- MAP FILTERS -->
     <div class="absolute top-4 right-4 z-10 w-64 pointer-events-auto">
       <div class="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-lg border border-slate-200">
         <h3 class="text-xs font-extrabold text-slate-900 mb-2">Map Layers & Filters</h3>
@@ -245,17 +126,14 @@
           <button onclick="switchBaseMap('googleTerrain')" id="layer-googleTerrain" class="py-1 rounded-lg text-slate-600 transition">Terrain</button>
           <button onclick="switchBaseMap('cleanLight')" id="layer-cleanLight" class="py-1 rounded-lg text-slate-600 transition">Minimal</button>
         </div>
-        
-        <!-- Re-added Clustering Toggle Checkbox -->
         <label class="flex items-center justify-between text-[11px] text-slate-600 font-medium mb-3 cursor-pointer">
           <span>Cluster zoom (Number Bubbles)</span>
           <input type="checkbox" id="toggle-clustering" checked onchange="renderNetwork()" class="w-3.5 h-3.5 accent-red-600 rounded cursor-pointer" />
         </label>
-        
         <div class="flex items-center justify-between gap-2">
           <label class="text-[11px] text-slate-600 font-medium">Organization:</label>
           <select id="select-org-filter" onchange="renderNetwork()" class="text-[11px] font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-800 outline-none max-w-[120px] truncate">
-            <option value="ALL">All Orgs</option>
+            <option value="ALL">All Orgs (0)</option>
           </select>
         </div>
       </div>
@@ -263,9 +141,6 @@
   </div>
 
   <script>
-    // Added "Jane Doe" right next to John Smith to force a cluster bubble when zoomed out
-    const BACKEND_PROFILES = [];
-
     const map = L.map('map', { center: [39.8283, -98.5795], zoom: 5, minZoom: 3, zoomControl: false, attributionControl: false });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -279,62 +154,36 @@
     const nodesLayerGroup = L.layerGroup().addTo(map);
     let PROFILES = [];
 
-    // --- DRAGGABLE ORG CHART LOGIC ---
+    // DRAGGABLE ORG CHART LOGIC
     const slider = document.getElementById('org-scroll-container');
-    let isDown = false;
-    let startX, startY, scrollLeft, scrollTop;
-
-    slider.addEventListener('mousedown', (e) => {
-      isDown = true;
-      slider.classList.add('cursor-grabbing');
-      slider.classList.remove('cursor-grab');
-      startX = e.pageX - slider.offsetLeft;
-      startY = e.pageY - slider.offsetTop;
-      scrollLeft = slider.scrollLeft;
-      scrollTop = slider.scrollTop;
-    });
+    let isDown = false, startX, startY, scrollLeft, scrollTop;
+    slider.addEventListener('mousedown', (e) => { isDown = true; slider.classList.add('cursor-grabbing'); slider.classList.remove('cursor-grab'); startX = e.pageX - slider.offsetLeft; startY = e.pageY - slider.offsetTop; scrollLeft = slider.scrollLeft; scrollTop = slider.scrollTop; });
     slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('cursor-grabbing'); slider.classList.add('cursor-grab'); });
     slider.addEventListener('mouseup', () => { isDown = false; slider.classList.remove('cursor-grabbing'); slider.classList.add('cursor-grab'); });
-    slider.addEventListener('mousemove', (e) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const x = e.pageX - slider.offsetLeft;
-      const y = e.pageY - slider.offsetTop;
-      const walkX = (x - startX) * 1.5;
-      const walkY = (y - startY) * 1.5;
-      slider.scrollLeft = scrollLeft - walkX;
-      slider.scrollTop = scrollTop - walkY;
-    });
+    slider.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const walkX = (e.pageX - slider.offsetLeft - startX) * 1.5; const walkY = (e.pageY - slider.offsetTop - startY) * 1.5; slider.scrollLeft = scrollLeft - walkX; slider.scrollTop = scrollTop - walkY; });
 
     function switchBaseMap(layerKey) {
       map.removeLayer(currentLayer);
       currentLayer = tileLayers[layerKey].addTo(map);
       ['googleLight', 'googleTerrain', 'cleanLight'].forEach(key => {
-        const btn = document.getElementById(`layer-${key}`);
-        btn.className = key === layerKey ? 'py-1 rounded-lg bg-white text-slate-900 shadow-sm transition' : 'py-1 rounded-lg text-slate-600 hover:text-slate-900 transition';
+        document.getElementById(`layer-${key}`).className = key === layerKey ? 'py-1 rounded-lg bg-white text-slate-900 shadow-sm transition' : 'py-1 rounded-lg text-slate-600 hover:text-slate-900 transition';
       });
     }
 
-    // Trigger re-render on zoom to handle clustering
-    map.on('zoomend', () => {
-      renderNetwork();
-    });
+    map.on('zoomend', () => renderNetwork());
 
     function renderNetwork() {
       nodesLayerGroup.clearLayers();
       const selectedOrg = document.getElementById('select-org-filter').value;
       const activeProfiles = selectedOrg === 'ALL' ? PROFILES : PROFILES.filter(p => (p.organization || 'Unassigned') === selectedOrg);
-      
       if (activeProfiles.length === 0) return;
 
       const zoom = map.getZoom();
       const clusterEnabled = document.getElementById('toggle-clustering').checked;
 
-      // Restored Clustering Logic
       if (clusterEnabled && zoom < 10) {
         const gridSize = zoom <= 6 ? 4.5 : 1.2;
         const buckets = {};
-        
         activeProfiles.forEach(p => {
           const key = `${Math.round(p.lat / gridSize)}_${Math.round(p.lng / gridSize)}`;
           if (!buckets[key]) buckets[key] = [];
@@ -345,34 +194,16 @@
           const avgLat = group.reduce((sum, p) => sum + p.lat, 0) / group.length;
           const avgLng = group.reduce((sum, p) => sum + p.lng, 0) / group.length;
 
-          // If zoomed in close enough and only 1 person, show their name card
           if (group.length === 1 && zoom >= 8) {
             createProfileMarker(group[0]).addTo(nodesLayerGroup);
           } else {
-            // If clustered, show the red number bubble
             const size = group.length > 9 ? 44 : 38;
-            const icon = L.divIcon({
-              className: '',
-              html: `<div class="geonet-cluster-marker" style="width:${size}px;height:${size}px;">${group.length}</div>`,
-              iconSize: [size, size],
-              iconAnchor: [size / 2, size / 2]
-            });
-            const m = L.marker([avgLat, avgLng], { icon });
-            m.on('click', () => {
-              if (group.length === 1) {
-                openSidebar(group[0]);
-              } else {
-                map.flyTo([avgLat, avgLng], Math.min(zoom + 3, 12), { duration: 0.6 });
-              }
-            });
-            m.addTo(nodesLayerGroup);
+            const icon = L.divIcon({ className: '', html: `<div class="geonet-cluster-marker" style="width:${size}px;height:${size}px;">${group.length}</div>`, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+            L.marker([avgLat, avgLng], { icon }).on('click', () => { group.length === 1 ? openSidebar(group[0]) : map.flyTo([avgLat, avgLng], Math.min(zoom + 3, 12), { duration: 0.6 }); }).addTo(nodesLayerGroup);
           }
         });
       } else {
-        // If clustering is disabled or zoomed in close (Zoom 10+), show all name cards
-        activeProfiles.forEach(profile => {
-          createProfileMarker(profile).addTo(nodesLayerGroup);
-        });
+        activeProfiles.forEach(profile => createProfileMarker(profile).addTo(nodesLayerGroup));
       }
     }
 
@@ -387,54 +218,38 @@
       setTimeout(() => map.invalidateSize(), 50); 
       map.flyTo([profile.lat, profile.lng], 10, { duration: 0.5 });
 
-      // Populate Text Data
       document.getElementById('sb-name').textContent = profile.name;
       document.getElementById('sb-org').textContent = profile.organization || '--------';
-      document.getElementById('sb-subgroup').textContent = profile.subgroup || profile.customFields?.subgroup || '--------';
-      document.getElementById('sb-etc').textContent = profile.etc || profile.customFields?.etc || '--------';
+      document.getElementById('sb-subgroup').textContent = profile.subgroup || '--------';
+      document.getElementById('sb-etc').textContent = profile.etc || '--------';
+      document.getElementById('sb-seemore').href = profile.url || '#';
 
-      document.getElementById('sb-seemore').href = profile.url || profile.permalink || '#';
+      document.getElementById('sb-racism-marker').style.left = `${Math.min(100, Math.max(0, profile.racismScore || 0))}%`;
+      document.getElementById('sb-sexism-marker').style.left = `${Math.min(100, Math.max(0, profile.sexismScore || 0))}%`;
+      document.getElementById('sb-extremism-marker').style.left = `${Math.min(100, Math.max(0, profile.extremismScore || 0))}%`;
 
-      // Set Metric Tickers
-      document.getElementById('sb-racism-marker').style.left = `${Math.min(100, Math.max(0, profile.racismScore || profile.customFields?.racismScore || 0))}%`;
-      document.getElementById('sb-sexism-marker').style.left = `${Math.min(100, Math.max(0, profile.sexismScore || profile.customFields?.sexismScore || 0))}%`;
-      document.getElementById('sb-extremism-marker').style.left = `${Math.min(100, Math.max(0, profile.extremismScore || profile.customFields?.extremismScore || 0))}%`;
-
-      // Populate Org Chart
       document.getElementById('sb-chart-name').textContent = profile.name;
-      const sup = profile.supervisor || profile.customFields?.supervisor;
-      document.getElementById('sb-supervisor-name').textContent = sup ? sup : "No Supervisor";
+      document.getElementById('sb-supervisor-name').textContent = profile.supervisor || "No Supervisor";
       
-      let subs = profile.subordinates || profile.customFields?.subordinates || [];
+      let subs = profile.subordinates || [];
       if (typeof subs === 'string') subs = subs.split(',').map(s => s.trim());
       
       const subContainer = document.getElementById('subordinates-container');
       if (subs.length > 0) {
         subContainer.classList.remove('hidden');
-        document.getElementById('sb-sub-1').textContent = subs[0] || '';
-        document.getElementById('sb-sub-1').parentElement.style.visibility = subs[0] ? 'visible' : 'hidden';
-        document.getElementById('sb-sub-2').textContent = subs[1] || '';
-        document.getElementById('sb-sub-2').parentElement.style.visibility = subs[1] ? 'visible' : 'hidden';
-        document.getElementById('sb-sub-3').textContent = subs[2] || '';
-        document.getElementById('sb-sub-3').parentElement.style.visibility = subs[2] ? 'visible' : 'hidden';
+        document.getElementById('sb-sub-1').textContent = subs[0] || ''; document.getElementById('sb-sub-1').parentElement.style.visibility = subs[0] ? 'visible' : 'hidden';
+        document.getElementById('sb-sub-2').textContent = subs[1] || ''; document.getElementById('sb-sub-2').parentElement.style.visibility = subs[1] ? 'visible' : 'hidden';
+        document.getElementById('sb-sub-3').textContent = subs[2] || ''; document.getElementById('sb-sub-3').parentElement.style.visibility = subs[2] ? 'visible' : 'hidden';
       } else {
         subContainer.classList.add('hidden');
       }
-
-      // Center the draggable canvas
-      setTimeout(() => {
-        slider.scrollLeft = (slider.scrollWidth - slider.clientWidth) / 2;
-        slider.scrollTop = (slider.scrollHeight - slider.clientHeight) / 2;
-      }, 50);
+      setTimeout(() => { slider.scrollLeft = (slider.scrollWidth - slider.clientWidth) / 2; slider.scrollTop = (slider.scrollHeight - slider.clientHeight) / 2; }, 50);
     }
 
-    function closeSidebar() {
-      document.getElementById('left-sidebar').classList.remove('active');
-      setTimeout(() => map.invalidateSize(), 50);
-    }
+    function closeSidebar() { document.getElementById('left-sidebar').classList.remove('active'); setTimeout(() => map.invalidateSize(), 50); }
 
     function applyProfilesToMap(rawList) {
-      PROFILES = rawList;
+      PROFILES = rawList || [];
       const orgSelect = document.getElementById('select-org-filter');
       const orgs = [...new Set(PROFILES.map(p => p.organization || 'Unassigned'))].sort();
       orgSelect.innerHTML = `<option value="ALL">All Orgs (${orgs.length})</option>`;
@@ -443,13 +258,20 @@
     }
 
     async function syncProfiles() {
-      applyProfilesToMap(BACKEND_PROFILES);
       const apiEndpoint = new URLSearchParams(window.location.search).get('api');
       if(apiEndpoint) {
         try {
           const res = await fetch(apiEndpoint, { cache: 'no-store' });
-          if (res.ok) applyProfilesToMap(await res.json());
-        } catch (e) {}
+          if (res.ok) {
+            applyProfilesToMap(await res.json());
+          } else {
+            console.error("WordPress API returned an error:", res.status);
+          }
+        } catch (e) {
+          console.error("Could not reach WordPress API:", e);
+        }
+      } else {
+        console.warn("No WordPress API URL provided in the iframe src.");
       }
     }
 
