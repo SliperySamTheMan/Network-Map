@@ -264,40 +264,7 @@
 
   <script>
     // Added "Jane Doe" right next to John Smith to force a cluster bubble when zoomed out
-    const BACKEND_PROFILES = [
-      {
-        id: "john-smith",
-        name: "John Smith",
-        url: "#",
-        lat: 40.7549,
-        lng: -75.9840,
-        organization: "City Hall",
-        subgroup: "Council Office",
-        etc: "Tenured",
-        racismScore: 35,
-        sexismScore: 20,
-        extremismScore: 10,
-        supervisor: "Mayor Wilkins",
-        subordinates: ["Jane Doe", "Bob Clark", "Tim Smith"],
-        connections: []
-      },
-      {
-        id: "jane-doe",
-        name: "Jane Doe",
-        url: "#",
-        lat: 40.7600,
-        lng: -75.9900,
-        organization: "City Hall",
-        subgroup: "Council Office",
-        etc: "Junior Member",
-        racismScore: 10,
-        sexismScore: 5,
-        extremismScore: 0,
-        supervisor: "John Smith",
-        subordinates: [],
-        connections: []
-      }
-    ];
+    const BACKEND_PROFILES = [];
 
     const map = L.map('map', { center: [39.8283, -98.5795], zoom: 5, minZoom: 3, zoomControl: false, attributionControl: false });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
