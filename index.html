@@ -15,7 +15,7 @@
 
   <style>
     body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow: hidden; }
-    #map-container { display: flex; height: calc(100vh - 56px); width: 100%; position: relative; }
+    #map-container { display: flex; height: 100vh; width: 100%; position: relative; } /* Changed to 100vh */
     #map { flex: 1; height: 100%; z-index: 1; }
     .leaflet-control-attribution, .leaflet-attribution-flag { display: none !important; }
     
@@ -46,19 +46,7 @@
 </head>
 <body class="flex flex-col h-screen select-none">
 
-  <!-- TOP HEADER -->
-  <header class="h-14 bg-white border-b border-slate-200 px-6 flex items-center justify-between z-30 shadow-sm shrink-0">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-red-600 flex items-center justify-center text-white shadow-sm">
-        <i class="fa-solid fa-diagram-project text-base"></i>
-      </div>
-      <span class="font-extrabold text-lg tracking-tight text-slate-900">GeoNet</span>
-      <span class="text-[10px] font-bold tracking-widest uppercase px-2.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100">USA ATLAS</span>
-    </div>
-    <button onclick="syncProfiles()" class="w-8 h-8 rounded-full bg-slate-900 text-emerald-400 flex items-center justify-center shadow hover:bg-slate-800 transition">
-      <i class="fa-solid fa-rotate text-xs"></i>
-    </button>
-  </header>
+  <!-- Header removed completely. Map now starts at the very top. -->
 
   <div id="map-container">
     
@@ -117,6 +105,11 @@
     <!-- MAP AREA -->
     <div id="map"></div>
     
+    <!-- FLOATING REFRESH BUTTON -->
+    <button onclick="syncProfiles()" class="absolute top-4 left-4 z-10 w-9 h-9 rounded-full bg-slate-900 text-emerald-400 flex items-center justify-center shadow-lg hover:bg-slate-800 transition" title="Refresh Live Data">
+      <i class="fa-solid fa-rotate text-sm"></i>
+    </button>
+
     <!-- MAP FILTERS -->
     <div class="absolute top-4 right-4 z-10 w-64 pointer-events-auto">
       <div class="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-lg border border-slate-200">
@@ -249,16 +242,11 @@
     function closeSidebar() { document.getElementById('left-sidebar').classList.remove('active'); setTimeout(() => map.invalidateSize(), 50); }
 
     function applyProfilesToMap(rawList) {
-      // THE FIX: Normalized coordinate extraction. Hunts for all potential keys, extracts the float, filters out NaNs.
       PROFILES = (rawList || []).map(p => {
         const rawLat = p.lat ?? p.latitude ?? p.lattitude ?? (p.customFields && (p.customFields.latitude || p.customFields.lattitude || p.customFields.lat));
         const rawLng = p.lng ?? p.longitude ?? (p.customFields && (p.customFields.longitude || p.customFields.lng));
-        return {
-          ...p,
-          lat: parseFloat(rawLat),
-          lng: parseFloat(rawLng)
-        };
-      }).filter(p => !isNaN(p.lat) && !isNaN(p.lng)); // Safety catch: Drops profiles missing coordinates
+        return { ...p, lat: parseFloat(rawLat), lng: parseFloat(rawLng) };
+      }).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
 
       const orgSelect = document.getElementById('select-org-filter');
       const orgs = [...new Set(PROFILES.map(p => p.organization || 'Unassigned'))].sort();
@@ -275,14 +263,10 @@
           const res = await fetch(apiEndpoint, { cache: 'no-store' });
           if (res.ok) {
             applyProfilesToMap(await res.json());
-          } else {
-            console.error("WordPress API returned an error:", res.status);
           }
         } catch (e) {
           console.error("Could not reach WordPress API:", e);
         }
-      } else {
-        console.warn("No WordPress API URL provided in the iframe src.");
       }
     }
 
