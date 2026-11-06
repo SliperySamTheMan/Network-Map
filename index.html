@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GeoNet // Interactive US Organizational Network Atlas</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,10 +11,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
   <style>
     body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow: hidden; }
-    #map-container { display: flex; height: 100vh; width: 100%; position: relative; } /* Changed to 100vh */
+    #map-container { display: flex; height: 100vh; width: 100%; position: relative; } 
     #map { flex: 1; height: 100%; z-index: 1; }
     .leaflet-control-attribution, .leaflet-attribution-flag { display: none !important; }
     
@@ -23,49 +21,46 @@
     #left-sidebar.active { display: flex; }
 
     .metric-bar-container { position: relative; padding-bottom: 24px; margin-top: 10px; }
-    .metric-bar { width: 100%; height: 18px; border-radius: 9px; border: 2px solid #000; background: linear-gradient(to right, #22c55e 0%, #22c55e 20%, #84cc16 20%, #84cc16 40%, #eab308 40%, #eab308 60%, #f97316 60%, #f97316 80%, #ef4444 80%, #ef4444 100%); position: relative; }
+    .metric-bar { width: 100%; height: 18px; border-radius: 9px; border: 2px solid #000; background: linear-gradient(to right, #22c55e 0%, #84cc16 25%, #eab308 50%, #f97316 75%, #ef4444 100%); position: relative; }
     .metric-marker { position: absolute; top: 16px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid #000; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
     .metric-marker::after { content: ''; position: absolute; top: 10px; left: -1px; width: 2px; height: 12px; background-color: #000; }
 
-    #org-scroll-container { flex: 1; overflow: hidden; background: white; border-top: 4px solid #000; position: relative; }
-    .cursor-grab { cursor: grab; }
-    .cursor-grabbing { cursor: grabbing; }
-
-    .org-canvas { min-width: 700px; min-height: 500px; display: flex; align-items: center; justify-content: center; padding: 40px; }
-    .org-node { display: flex; flex-direction: column; align-items: center; text-align: center; }
-    .org-avatar { width: 54px; height: 54px; border-radius: 8px; background: #cbd5e1; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 26px; border: 3px solid #94a3b8; margin-bottom: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    .org-avatar.active-target { border-color: #9f1239; background: #f87171; border-width: 4px; }
-    .tree-line-v { width: 3px; height: 28px; background: #64748b; }
-    .tree-line-h { width: 100%; height: 3px; background: #64748b; position: absolute; top: 0; }
+    #org-scroll-container { flex: 1; overflow: auto; background: white; border-top: 4px solid #000; position: relative; }
+    .org-canvas { min-width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px; }
+    .tree-line-v { width: 3px; background: #64748b; }
+    .tree-line-h { height: 3px; background: #64748b; width: 100%; position: absolute; top: 0; }
 
     .geonet-cluster-marker { background: #ef4444; color: #ffffff; border: 3px solid #ffffff; border-radius: 9999px; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; transition: transform 0.15s ease; cursor: pointer; }
     .geonet-cluster-marker:hover { transform: scale(1.1); }
-    .geonet-card-marker { background: #ffffff; border: 2px solid #0f172a; border-radius: 9999px; padding: 3px 10px 3px 4px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18); white-space: nowrap; transition: all 0.15s ease; cursor: pointer;}
+    .geonet-card-marker { background: #ffffff; border: 2px solid #0f172a; border-radius: 9999px; padding: 3px 10px 3px 3px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18); white-space: nowrap; transition: all 0.15s ease; cursor: pointer;}
     .geonet-card-marker:hover { border-color: #ef4444; transform: translateY(-2px); }
   </style>
 </head>
 <body class="flex flex-col h-screen select-none">
-
-  <!-- Header removed completely. Map now starts at the very top. -->
-
   <div id="map-container">
     
     <!-- LEFT SIDEBAR -->
     <div id="left-sidebar">
-      <div class="p-5 relative">
+      <div class="p-5 relative shrink-0">
         <button onclick="closeSidebar()" class="absolute top-2 right-3 text-slate-400 hover:text-slate-900 text-xl"><i class="fa-solid fa-xmark"></i></button>
         
-        <div class="flex justify-between items-end border-b-[3px] border-black pb-2 mb-4 mt-2">
-          <h2 id="sb-name" class="text-3xl font-bold text-slate-900 truncate pr-2">Name</h2>
-          <a id="sb-seemore" href="#" target="_top" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-1.5 rounded-lg border-2 border-black shadow-sm text-sm transition-colors whitespace-nowrap">
+        <div class="flex justify-between items-start border-b-[3px] border-black pb-4 mb-4 mt-2">
+          <div class="flex items-center gap-3">
+            <div id="sb-portrait-container" class="w-[60px] h-[60px] rounded-lg bg-slate-200 border-2 border-slate-400 overflow-hidden shrink-0 hidden">
+              <img id="sb-portrait" src="" class="w-full h-full object-cover">
+            </div>
+            <div class="overflow-hidden">
+              <h2 id="sb-name" class="text-2xl font-bold text-slate-900 truncate">Name</h2>
+              <div id="sb-rank" class="text-xs font-bold text-red-600 truncate mt-0.5">Rank</div>
+            </div>
+          </div>
+          <a id="sb-seemore" href="#" target="_top" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-1.5 rounded-lg border-2 border-black shadow-sm text-sm transition-colors whitespace-nowrap mt-1">
             See More
           </a>
         </div>
         
-        <div class="text-[14px] text-slate-800 space-y-1.5 mb-5 border-b-[3px] border-black pb-5 font-semibold">
-          <div>Org: <span id="sb-org" class="font-normal text-slate-600">--------</span></div>
-          <div>Sub group: <span id="sb-subgroup" class="font-normal text-slate-600">--------</span></div>
-          <div>Etc: <span id="sb-etc" class="font-normal text-slate-600">--------</span></div>
+        <div class="text-[13px] text-slate-800 space-y-1 mb-5 border-b-[3px] border-black pb-4 font-semibold">
+          <div>Org: <span id="sb-org" class="font-normal text-slate-600"></span></div>
         </div>
 
         <div class="space-y-3 pb-2">
@@ -75,42 +70,19 @@
         </div>
       </div>
 
-      <!-- ORG CHART -->
-      <div id="org-scroll-container" class="cursor-grab">
-        <div class="org-canvas">
-          <div class="flex flex-col items-center">
-            <div class="org-node">
-              <div class="org-avatar"><i class="fa-solid fa-user"></i></div>
-              <div id="sb-supervisor-name" class="text-xs font-bold text-slate-700 text-center max-w-[90px] truncate">Supervisor</div>
-            </div>
-            <div class="tree-line-v"></div>
-            <div class="org-node">
-              <div class="org-avatar active-target"><i class="fa-solid fa-user"></i></div>
-              <div id="sb-chart-name" class="text-xs font-extrabold text-slate-900 text-center max-w-[90px] truncate">Current</div>
-            </div>
-            <div id="subordinates-container" class="w-full flex flex-col items-center hidden">
-              <div class="tree-line-v"></div>
-              <div class="relative w-full max-w-[320px] flex justify-between pt-8">
-                <div class="tree-line-h"></div>
-                <div class="org-node relative -mt-8"><div class="tree-line-v h-8"></div><div class="org-avatar"><i class="fa-solid fa-user"></i></div><div id="sb-sub-1" class="text-xs font-bold text-slate-700 text-center max-w-[80px] truncate">Sub 1</div></div>
-                <div class="org-node relative -mt-8"><div class="tree-line-v h-8"></div><div class="org-avatar"><i class="fa-solid fa-user"></i></div><div id="sb-sub-2" class="text-xs font-bold text-slate-700 text-center max-w-[80px] truncate">Sub 2</div></div>
-                <div class="org-node relative -mt-8"><div class="tree-line-v h-8"></div><div class="org-avatar"><i class="fa-solid fa-user"></i></div><div id="sb-sub-3" class="text-xs font-bold text-slate-700 text-center max-w-[80px] truncate">Sub 3</div></div>
-              </div>
-            </div>
-          </div>
+      <!-- DYNAMIC ORG CHART -->
+      <div id="org-scroll-container">
+        <div id="org-canvas-content" class="org-canvas">
+          <!-- Populated via JS -->
         </div>
       </div>
     </div>
 
     <!-- MAP AREA -->
     <div id="map"></div>
-    
-    <!-- FLOATING REFRESH BUTTON -->
-    <button onclick="syncProfiles()" class="absolute top-4 left-4 z-10 w-9 h-9 rounded-full bg-slate-900 text-emerald-400 flex items-center justify-center shadow-lg hover:bg-slate-800 transition" title="Refresh Live Data">
+    <button onclick="syncProfiles()" class="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-slate-900 text-emerald-400 flex items-center justify-center shadow-lg hover:bg-slate-800 transition" title="Refresh Live Data">
       <i class="fa-solid fa-rotate text-sm"></i>
     </button>
-
-    <!-- MAP FILTERS -->
     <div class="absolute top-4 right-4 z-10 w-64 pointer-events-auto">
       <div class="bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-lg border border-slate-200">
         <h3 class="text-xs font-extrabold text-slate-900 mb-2">Map Layers & Filters</h3>
@@ -125,9 +97,7 @@
         </label>
         <div class="flex items-center justify-between gap-2">
           <label class="text-[11px] text-slate-600 font-medium">Organization:</label>
-          <select id="select-org-filter" onchange="renderNetwork()" class="text-[11px] font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-800 outline-none max-w-[120px] truncate">
-            <option value="ALL">All Orgs (0)</option>
-          </select>
+          <select id="select-org-filter" onchange="renderNetwork()" class="text-[11px] font-semibold bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-slate-800 outline-none max-w-[120px] truncate"></select>
         </div>
       </div>
     </div>
@@ -142,18 +112,12 @@
       googleTerrain: L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 20 }),
       cleanLight: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 })
     };
-
     let currentLayer = tileLayers.googleLight.addTo(map);
+    
+    // Separate layers for nodes and connection lines
+    const linesLayerGroup = L.layerGroup().addTo(map);
     const nodesLayerGroup = L.layerGroup().addTo(map);
     let PROFILES = [];
-
-    // DRAGGABLE ORG CHART LOGIC
-    const slider = document.getElementById('org-scroll-container');
-    let isDown = false, startX, startY, scrollLeft, scrollTop;
-    slider.addEventListener('mousedown', (e) => { isDown = true; slider.classList.add('cursor-grabbing'); slider.classList.remove('cursor-grab'); startX = e.pageX - slider.offsetLeft; startY = e.pageY - slider.offsetTop; scrollLeft = slider.scrollLeft; scrollTop = slider.scrollTop; });
-    slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('cursor-grabbing'); slider.classList.add('cursor-grab'); });
-    slider.addEventListener('mouseup', () => { isDown = false; slider.classList.remove('cursor-grabbing'); slider.classList.add('cursor-grab'); });
-    slider.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const walkX = (e.pageX - slider.offsetLeft - startX) * 1.5; const walkY = (e.pageY - slider.offsetTop - startY) * 1.5; slider.scrollLeft = scrollLeft - walkX; slider.scrollTop = scrollTop - walkY; });
 
     function switchBaseMap(layerKey) {
       map.removeLayer(currentLayer);
@@ -167,10 +131,36 @@
 
     function renderNetwork() {
       nodesLayerGroup.clearLayers();
+      linesLayerGroup.clearLayers();
+      
       const selectedOrg = document.getElementById('select-org-filter').value;
       const activeProfiles = selectedOrg === 'ALL' ? PROFILES : PROFILES.filter(p => (p.organization || 'Unassigned') === selectedOrg);
       if (activeProfiles.length === 0) return;
 
+      // 1. Draw Network Connection Lines First (so they sit under the markers)
+      activeProfiles.forEach(p => {
+        const higherConnections = p.supervisorIds || [];
+        higherConnections.forEach(targetId => {
+          const target = activeProfiles.find(t => t.id === targetId);
+          if (target) {
+            L.polyline([[p.lat, p.lng], [target.lat, target.lng]], {
+              color: '#ef4444', weight: 2.5, opacity: 0.6, dashArray: '6, 6'
+            }).addTo(linesLayerGroup);
+          }
+        });
+        
+        const lowerConnections = p.subordinateIds || [];
+        lowerConnections.forEach(targetId => {
+          const target = activeProfiles.find(t => t.id === targetId);
+          if (target) {
+            L.polyline([[p.lat, p.lng], [target.lat, target.lng]], {
+              color: '#ef4444', weight: 2.5, opacity: 0.6, dashArray: '6, 6'
+            }).addTo(linesLayerGroup);
+          }
+        });
+      });
+
+      // 2. Draw Map Markers (With Portrait Support)
       const zoom = map.getZoom();
       const clusterEnabled = document.getElementById('toggle-clustering').checked;
 
@@ -186,7 +176,6 @@
         Object.values(buckets).forEach(group => {
           const avgLat = group.reduce((sum, p) => sum + p.lat, 0) / group.length;
           const avgLng = group.reduce((sum, p) => sum + p.lng, 0) / group.length;
-
           if (group.length === 1 && zoom >= 8) {
             createProfileMarker(group[0]).addTo(nodesLayerGroup);
           } else {
@@ -201,9 +190,42 @@
     }
 
     function createProfileMarker(profile) {
-      const html = `<div class="geonet-card-marker"><div class="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center text-red-600 text-[10px] font-bold border border-red-300">${profile.name.substring(0,2).toUpperCase()}</div><div class="pr-1"><div class="text-[11px] font-bold text-slate-900 leading-none">${profile.name}</div><div class="text-[9px] font-semibold text-red-600 leading-tight">${profile.organization || 'Member'}</div></div></div>`;
+      // Replaces initials with the portrait image if it exists
+      const avatarHtml = profile.portrait 
+        ? `<img src="${profile.portrait}" class="w-full h-full object-cover">` 
+        : `<span class="text-[10px] font-bold text-slate-500">${profile.name.substring(0,2).toUpperCase()}</span>`;
+        
+      const html = `
+        <div class="geonet-card-marker">
+          <div class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center border border-slate-300 overflow-hidden shrink-0">
+            ${avatarHtml}
+          </div>
+          <div class="pr-1">
+            <div class="text-[11px] font-bold text-slate-900 leading-none">${profile.name}</div>
+            <div class="text-[9px] font-semibold text-red-600 leading-tight">${profile.rank || profile.organization || 'Member'}</div>
+          </div>
+        </div>`;
       const icon = L.divIcon({ className: '', html, iconSize: null, iconAnchor: [20, 18] });
       return L.marker([profile.lat, profile.lng], { icon }).on('click', () => openSidebar(profile));
+    }
+
+    // Helper for generating Org Chart nodes
+    function buildOrgNode(profile, isActive = false) {
+      if(!profile) return '';
+      const activeClass = isActive ? 'border-[#9f1239] bg-[#f87171] border-[4px]' : 'border-[#94a3b8] bg-[#cbd5e1] border-[3px] hover:border-slate-500 transition';
+      const imgHtml = profile.portrait ? `<img src="${profile.portrait}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-white"></i>`;
+      return `
+        <div class="flex flex-col items-center cursor-pointer group" onclick="openSidebarById('${profile.id}')">
+          <div class="w-[50px] h-[50px] rounded-lg flex items-center justify-center text-xl overflow-hidden mb-1 shadow-sm ${activeClass}">
+            ${imgHtml}
+          </div>
+          <div class="text-[11px] font-bold text-slate-700 text-center max-w-[80px] leading-tight group-hover:text-red-600 transition">${profile.name}</div>
+        </div>`;
+    }
+
+    function openSidebarById(id) {
+      const p = PROFILES.find(x => x.id === id);
+      if(p) openSidebar(p);
     }
 
     function openSidebar(profile) {
@@ -211,41 +233,60 @@
       setTimeout(() => map.invalidateSize(), 50); 
       map.flyTo([profile.lat, profile.lng], 10, { duration: 0.5 });
 
+      // Update Text Fields
       document.getElementById('sb-name').textContent = profile.name;
+      document.getElementById('sb-rank').textContent = profile.rank || '';
       document.getElementById('sb-org').textContent = profile.organization || '--------';
-      document.getElementById('sb-subgroup').textContent = profile.subgroup || '--------';
-      document.getElementById('sb-etc').textContent = profile.etc || '--------';
       document.getElementById('sb-seemore').href = profile.url || '#';
 
-      document.getElementById('sb-racism-marker').style.left = `${Math.min(100, Math.max(0, profile.racismScore || 0))}%`;
-      document.getElementById('sb-sexism-marker').style.left = `${Math.min(100, Math.max(0, profile.sexismScore || 0))}%`;
-      document.getElementById('sb-extremism-marker').style.left = `${Math.min(100, Math.max(0, profile.extremismScore || 0))}%`;
-
-      document.getElementById('sb-chart-name').textContent = profile.name;
-      document.getElementById('sb-supervisor-name').textContent = profile.supervisor || "No Supervisor";
-      
-      let subs = profile.subordinates || [];
-      if (typeof subs === 'string') subs = subs.split(',').map(s => s.trim());
-      
-      const subContainer = document.getElementById('subordinates-container');
-      if (subs.length > 0) {
-        subContainer.classList.remove('hidden');
-        document.getElementById('sb-sub-1').textContent = subs[0] || ''; document.getElementById('sb-sub-1').parentElement.style.visibility = subs[0] ? 'visible' : 'hidden';
-        document.getElementById('sb-sub-2').textContent = subs[1] || ''; document.getElementById('sb-sub-2').parentElement.style.visibility = subs[1] ? 'visible' : 'hidden';
-        document.getElementById('sb-sub-3').textContent = subs[2] || ''; document.getElementById('sb-sub-3').parentElement.style.visibility = subs[2] ? 'visible' : 'hidden';
+      // Update Sidebar Portrait
+      const portraitContainer = document.getElementById('sb-portrait-container');
+      if (profile.portrait) {
+        document.getElementById('sb-portrait').src = profile.portrait;
+        portraitContainer.classList.remove('hidden');
       } else {
-        subContainer.classList.add('hidden');
+        portraitContainer.classList.add('hidden');
       }
-      setTimeout(() => { slider.scrollLeft = (slider.scrollWidth - slider.clientWidth) / 2; slider.scrollTop = (slider.scrollHeight - slider.clientHeight) / 2; }, 50);
+
+      // Convert 1-5 scale to 0%-100% width
+      const scaleToPercent = (score) => (Math.max(1, Math.min(5, score || 1)) - 1) * 25;
+      document.getElementById('sb-racism-marker').style.left = `${scaleToPercent(profile.racismScore)}%`;
+      document.getElementById('sb-sexism-marker').style.left = `${scaleToPercent(profile.sexismScore)}%`;
+      document.getElementById('sb-extremism-marker').style.left = `${scaleToPercent(profile.extremismScore)}%`;
+
+      // Dynamically Build the Org Chart
+      const orgCanvas = document.getElementById('org-canvas-content');
+      let orgHtml = `<div class="flex flex-col items-center">`;
+      
+      const supIds = profile.supervisorIds || [];
+      if (supIds.length > 0) {
+        orgHtml += `<div class="flex gap-6 justify-center">`;
+        supIds.forEach(id => { const s = PROFILES.find(x => x.id === id); if(s) orgHtml += buildOrgNode(s); });
+        orgHtml += `</div><div class="tree-line-v h-6"></div>`;
+      }
+      
+      orgHtml += buildOrgNode(profile, true);
+      
+      const subIds = profile.subordinateIds || [];
+      if (subIds.length > 0) {
+        orgHtml += `<div class="tree-line-v h-6"></div>`;
+        orgHtml += `<div class="relative w-full flex justify-center gap-6 pt-4 border-t-2 border-slate-500 mt-[-2px]">`;
+        subIds.forEach(id => { 
+          const s = PROFILES.find(x => x.id === id); 
+          if(s) orgHtml += `<div class="relative -mt-4 flex flex-col items-center"><div class="tree-line-v h-4"></div>${buildOrgNode(s)}</div>`; 
+        });
+        orgHtml += `</div>`;
+      }
+      
+      orgHtml += `</div>`;
+      orgCanvas.innerHTML = orgHtml;
     }
 
     function closeSidebar() { document.getElementById('left-sidebar').classList.remove('active'); setTimeout(() => map.invalidateSize(), 50); }
 
     function applyProfilesToMap(rawList) {
       PROFILES = (rawList || []).map(p => {
-        const rawLat = p.lat ?? p.latitude ?? p.lattitude ?? (p.customFields && (p.customFields.latitude || p.customFields.lattitude || p.customFields.lat));
-        const rawLng = p.lng ?? p.longitude ?? (p.customFields && (p.customFields.longitude || p.customFields.lng));
-        return { ...p, lat: parseFloat(rawLat), lng: parseFloat(rawLng) };
+        return { ...p, lat: parseFloat(p.lat), lng: parseFloat(p.lng) };
       }).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
 
       const orgSelect = document.getElementById('select-org-filter');
@@ -261,12 +302,8 @@
       if(apiEndpoint) {
         try {
           const res = await fetch(apiEndpoint, { cache: 'no-store' });
-          if (res.ok) {
-            applyProfilesToMap(await res.json());
-          }
-        } catch (e) {
-          console.error("Could not reach WordPress API:", e);
-        }
+          if (res.ok) applyProfilesToMap(await res.json());
+        } catch (e) { console.error("Could not reach WordPress API:", e); }
       }
     }
 
