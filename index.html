@@ -20,14 +20,11 @@
     #left-sidebar { width: 440px; background: white; border-right: 4px solid #475569; z-index: 20; display: none; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
     #left-sidebar.active { display: flex; }
 
-    /* Misconduct section scrolling and spacing */
     #misconduct-container { flex: 0 1 30%; overflow-y: auto; border-b: 4px solid #000; padding-bottom: 8px; }
-    .metric-bar-container { position: relative; padding-bottom: 12px; margin-top: 8px; }
-    .metric-bar { width: 100%; height: 14px; border-radius: 7px; border: 2px solid #000; background: linear-gradient(to right, #22c55e 0%, #84cc16 25%, #eab308 50%, #f97316 75%, #ef4444 100%); position: relative; }
-    .metric-marker { position: absolute; top: 12px; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 8px solid #000; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-    .metric-marker::after { content: ''; position: absolute; top: 8px; left: -1px; width: 2px; height: 10px; background-color: #000; }
+    .metric-bar-container { position: relative; padding-bottom: 12px; margin-top: 14px; }
+    .metric-bar { width: 100%; height: 14px; border-radius: 7px; border: 2px solid #000; background: linear-gradient(to right, #22c55e 0%, #84cc16 25%, #eab308 50%, #f97316 75%, #ef4444 100%); position: relative; margin-top: 4px; }
+    .metric-marker { position: absolute; top: 12px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 8px solid #000; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
 
-    /* Org Chart drag-to-scroll styles */
     #org-scroll-container { flex: 1; overflow: hidden; background: white; position: relative; cursor: grab; }
     #org-scroll-container:active { cursor: grabbing; }
     .org-canvas { min-width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px; transform-origin: center center; }
@@ -44,7 +41,6 @@
 <body class="flex flex-col h-screen select-none">
   <div id="map-container">
     
-    <!-- LEFT SIDEBAR -->
     <div id="left-sidebar">
       <div class="p-5 relative shrink-0">
         <button onclick="closeSidebar()" class="absolute top-2 right-3 text-slate-400 hover:text-slate-900 text-xl"><i class="fa-solid fa-xmark"></i></button>
@@ -69,12 +65,10 @@
         </div>
       </div>
 
-      <!-- DYNAMIC MISCONDUCT SECTION -->
       <div id="misconduct-container" class="px-5">
         <!-- Populated via JS -->
       </div>
 
-      <!-- DYNAMIC ORG CHART -->
       <div id="org-scroll-container">
         <div id="org-canvas-content" class="org-canvas">
           <!-- Populated via JS -->
@@ -82,7 +76,6 @@
       </div>
     </div>
 
-    <!-- MAP AREA -->
     <div id="map"></div>
     <button onclick="syncProfiles()" class="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-slate-900 text-emerald-400 flex items-center justify-center shadow-lg hover:bg-slate-800 transition" title="Refresh Live Data">
       <i class="fa-solid fa-rotate text-sm"></i>
@@ -122,7 +115,6 @@
     const nodesLayerGroup = L.layerGroup().addTo(map);
     let PROFILES = [];
 
-    // Drag-to-scroll logic for Org Chart
     const orgContainer = document.getElementById('org-scroll-container');
     const orgCanvas = document.getElementById('org-canvas-content');
     let isDragging = false;
@@ -156,7 +148,6 @@
         orgCanvas.style.transform = `translate(${currentTranslateX}px, ${currentTranslateY}px)`;
     });
 
-    // Reset transform when opening a new sidebar
     function resetOrgChartPosition() {
         initialTranslateX = 0;
         initialTranslateY = 0;
@@ -290,28 +281,26 @@
         portraitContainer.classList.add('hidden');
       }
 
-      // Dynamically Build Misconduct Section
       const misconductContainer = document.getElementById('misconduct-container');
       let misconductHtml = '';
       
       const scaleToPercent = (score) => (Math.max(1, Math.min(5, score || 1)) - 1) * 25;
       
-      if (profile.misconductScores) {
-          for (const [key, value] of Object.entries(profile.misconductScores)) {
+      if (profile.misconductData && profile.misconductData.length > 0) {
+          profile.misconductData.forEach(item => {
               misconductHtml += `
                   <div class="metric-bar-container">
+                      <div class="text-[12px] font-extrabold text-slate-900">${item.name}</div>
                       <div class="metric-bar">
-                          <div class="metric-marker" style="left: ${scaleToPercent(value)}%;"></div>
+                          <div class="metric-marker" style="left: ${scaleToPercent(item.score)}%;"></div>
                       </div>
-                      <div class="text-[11px] font-bold text-center mt-2 text-slate-800">${key}</div>
+                      <div class="text-[10px] font-bold text-slate-500 mt-1.5">${item.label}</div>
                   </div>
               `;
-          }
+          });
       }
       misconductContainer.innerHTML = misconductHtml;
 
-
-      // Dynamically Build the Org Chart
       const orgCanvasContent = document.getElementById('org-canvas-content');
       let orgHtml = `<div class="flex flex-col items-center">`;
       
