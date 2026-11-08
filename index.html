@@ -20,13 +20,18 @@
     #left-sidebar { width: 440px; background: white; border-right: 4px solid #475569; z-index: 20; display: none; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
     #left-sidebar.active { display: flex; }
 
-    .metric-bar-container { position: relative; padding-bottom: 24px; margin-top: 10px; }
-    .metric-bar { width: 100%; height: 18px; border-radius: 9px; border: 2px solid #000; background: linear-gradient(to right, #22c55e 0%, #84cc16 25%, #eab308 50%, #f97316 75%, #ef4444 100%); position: relative; }
-    .metric-marker { position: absolute; top: 16px; width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid #000; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-    .metric-marker::after { content: ''; position: absolute; top: 10px; left: -1px; width: 2px; height: 12px; background-color: #000; }
+    /* Misconduct section scrolling and spacing */
+    #misconduct-container { flex: 0 1 30%; overflow-y: auto; border-b: 4px solid #000; padding-bottom: 8px; }
+    .metric-bar-container { position: relative; padding-bottom: 12px; margin-top: 8px; }
+    .metric-bar { width: 100%; height: 14px; border-radius: 7px; border: 2px solid #000; background: linear-gradient(to right, #22c55e 0%, #84cc16 25%, #eab308 50%, #f97316 75%, #ef4444 100%); position: relative; }
+    .metric-marker { position: absolute; top: 12px; width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 8px solid #000; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .metric-marker::after { content: ''; position: absolute; top: 8px; left: -1px; width: 2px; height: 10px; background-color: #000; }
 
-    #org-scroll-container { flex: 1; overflow: auto; background: white; border-top: 4px solid #000; position: relative; }
-    .org-canvas { min-width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px; }
+    /* Org Chart drag-to-scroll styles */
+    #org-scroll-container { flex: 1; overflow: hidden; background: white; position: relative; cursor: grab; }
+    #org-scroll-container:active { cursor: grabbing; }
+    .org-canvas { min-width: 100%; min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px; transform-origin: center center; }
+    
     .tree-line-v { width: 3px; background: #64748b; }
     .tree-line-h { height: 3px; background: #64748b; width: 100%; position: absolute; top: 0; }
 
@@ -44,7 +49,7 @@
       <div class="p-5 relative shrink-0">
         <button onclick="closeSidebar()" class="absolute top-2 right-3 text-slate-400 hover:text-slate-900 text-xl"><i class="fa-solid fa-xmark"></i></button>
         
-        <div class="flex justify-between items-start border-b-[3px] border-black pb-4 mb-4 mt-2">
+        <div class="flex justify-between items-start border-b-[3px] border-black pb-4 mb-2 mt-2">
           <div class="flex items-center gap-3">
             <div id="sb-portrait-container" class="w-[60px] h-[60px] rounded-lg bg-slate-200 border-2 border-slate-400 overflow-hidden shrink-0 hidden">
               <img id="sb-portrait" src="" class="w-full h-full object-cover">
@@ -59,15 +64,14 @@
           </a>
         </div>
         
-        <div class="text-[13px] text-slate-800 space-y-1 mb-5 border-b-[3px] border-black pb-4 font-semibold">
+        <div class="text-[13px] text-slate-800 space-y-1 mb-2 border-b-[3px] border-black pb-2 font-semibold">
           <div>Org: <span id="sb-org" class="font-normal text-slate-600"></span></div>
         </div>
+      </div>
 
-        <div class="space-y-3 pb-2">
-          <div class="metric-bar-container"><div class="metric-bar"><div id="sb-racism-marker" class="metric-marker" style="left: 0%;"></div></div><div class="text-[13px] font-bold text-center mt-3 text-slate-800">Racism</div></div>
-          <div class="metric-bar-container"><div class="metric-bar"><div id="sb-sexism-marker" class="metric-marker" style="left: 0%;"></div></div><div class="text-[13px] font-bold text-center mt-3 text-slate-800">Sexism</div></div>
-          <div class="metric-bar-container"><div class="metric-bar"><div id="sb-extremism-marker" class="metric-marker" style="left: 0%;"></div></div><div class="text-[13px] font-bold text-center mt-3 text-slate-800">Religious Extremism</div></div>
-        </div>
+      <!-- DYNAMIC MISCONDUCT SECTION -->
+      <div id="misconduct-container" class="px-5">
+        <!-- Populated via JS -->
       </div>
 
       <!-- DYNAMIC ORG CHART -->
@@ -114,10 +118,52 @@
     };
     let currentLayer = tileLayers.googleLight.addTo(map);
     
-    // Separate layers for nodes and connection lines
     const linesLayerGroup = L.layerGroup().addTo(map);
     const nodesLayerGroup = L.layerGroup().addTo(map);
     let PROFILES = [];
+
+    // Drag-to-scroll logic for Org Chart
+    const orgContainer = document.getElementById('org-scroll-container');
+    const orgCanvas = document.getElementById('org-canvas-content');
+    let isDragging = false;
+    let startX, startY, initialTranslateX = 0, initialTranslateY = 0;
+    let currentTranslateX = 0, currentTranslateY = 0;
+
+    orgContainer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.pageX;
+        startY = e.pageY;
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            initialTranslateX = currentTranslateX;
+            initialTranslateY = currentTranslateY;
+        }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        
+        const dx = e.pageX - startX;
+        const dy = e.pageY - startY;
+        
+        currentTranslateX = initialTranslateX + dx;
+        currentTranslateY = initialTranslateY + dy;
+        
+        orgCanvas.style.transform = `translate(${currentTranslateX}px, ${currentTranslateY}px)`;
+    });
+
+    // Reset transform when opening a new sidebar
+    function resetOrgChartPosition() {
+        initialTranslateX = 0;
+        initialTranslateY = 0;
+        currentTranslateX = 0;
+        currentTranslateY = 0;
+        orgCanvas.style.transform = `translate(0px, 0px)`;
+    }
 
     function switchBaseMap(layerKey) {
       map.removeLayer(currentLayer);
@@ -137,7 +183,6 @@
       const activeProfiles = selectedOrg === 'ALL' ? PROFILES : PROFILES.filter(p => (p.organization || 'Unassigned') === selectedOrg);
       if (activeProfiles.length === 0) return;
 
-      // 1. Draw Network Connection Lines First (so they sit under the markers)
       activeProfiles.forEach(p => {
         const higherConnections = p.supervisorIds || [];
         higherConnections.forEach(targetId => {
@@ -160,7 +205,6 @@
         });
       });
 
-      // 2. Draw Map Markers (With Portrait Support)
       const zoom = map.getZoom();
       const clusterEnabled = document.getElementById('toggle-clustering').checked;
 
@@ -190,7 +234,6 @@
     }
 
     function createProfileMarker(profile) {
-      // Replaces initials with the portrait image if it exists
       const avatarHtml = profile.portrait 
         ? `<img src="${profile.portrait}" class="w-full h-full object-cover">` 
         : `<span class="text-[10px] font-bold text-slate-500">${profile.name.substring(0,2).toUpperCase()}</span>`;
@@ -209,11 +252,10 @@
       return L.marker([profile.lat, profile.lng], { icon }).on('click', () => openSidebar(profile));
     }
 
-    // Helper for generating Org Chart nodes
     function buildOrgNode(profile, isActive = false) {
       if(!profile) return '';
       const activeClass = isActive ? 'border-[#9f1239] bg-[#f87171] border-[4px]' : 'border-[#94a3b8] bg-[#cbd5e1] border-[3px] hover:border-slate-500 transition';
-      const imgHtml = profile.portrait ? `<img src="${profile.portrait}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user text-white"></i>`;
+      const imgHtml = profile.portrait ? `<img src="${profile.portrait}" class="w-full h-full object-cover draggable="false"">` : `<i class="fa-solid fa-user text-white"></i>`;
       return `
         <div class="flex flex-col items-center cursor-pointer group" onclick="openSidebarById('${profile.id}')">
           <div class="w-[50px] h-[50px] rounded-lg flex items-center justify-center text-xl overflow-hidden mb-1 shadow-sm ${activeClass}">
@@ -232,14 +274,14 @@
       document.getElementById('left-sidebar').classList.add('active');
       setTimeout(() => map.invalidateSize(), 50); 
       map.flyTo([profile.lat, profile.lng], 10, { duration: 0.5 });
+      
+      resetOrgChartPosition();
 
-      // Update Text Fields
       document.getElementById('sb-name').textContent = profile.name;
       document.getElementById('sb-rank').textContent = profile.rank || '';
       document.getElementById('sb-org').textContent = profile.organization || '--------';
       document.getElementById('sb-seemore').href = profile.url || '#';
 
-      // Update Sidebar Portrait
       const portraitContainer = document.getElementById('sb-portrait-container');
       if (profile.portrait) {
         document.getElementById('sb-portrait').src = profile.portrait;
@@ -248,14 +290,29 @@
         portraitContainer.classList.add('hidden');
       }
 
-      // Convert 1-5 scale to 0%-100% width
+      // Dynamically Build Misconduct Section
+      const misconductContainer = document.getElementById('misconduct-container');
+      let misconductHtml = '';
+      
       const scaleToPercent = (score) => (Math.max(1, Math.min(5, score || 1)) - 1) * 25;
-      document.getElementById('sb-racism-marker').style.left = `${scaleToPercent(profile.racismScore)}%`;
-      document.getElementById('sb-sexism-marker').style.left = `${scaleToPercent(profile.sexismScore)}%`;
-      document.getElementById('sb-extremism-marker').style.left = `${scaleToPercent(profile.extremismScore)}%`;
+      
+      if (profile.misconductScores) {
+          for (const [key, value] of Object.entries(profile.misconductScores)) {
+              misconductHtml += `
+                  <div class="metric-bar-container">
+                      <div class="metric-bar">
+                          <div class="metric-marker" style="left: ${scaleToPercent(value)}%;"></div>
+                      </div>
+                      <div class="text-[11px] font-bold text-center mt-2 text-slate-800">${key}</div>
+                  </div>
+              `;
+          }
+      }
+      misconductContainer.innerHTML = misconductHtml;
+
 
       // Dynamically Build the Org Chart
-      const orgCanvas = document.getElementById('org-canvas-content');
+      const orgCanvasContent = document.getElementById('org-canvas-content');
       let orgHtml = `<div class="flex flex-col items-center">`;
       
       const supIds = profile.supervisorIds || [];
@@ -279,7 +336,7 @@
       }
       
       orgHtml += `</div>`;
-      orgCanvas.innerHTML = orgHtml;
+      orgCanvasContent.innerHTML = orgHtml;
     }
 
     function closeSidebar() { document.getElementById('left-sidebar').classList.remove('active'); setTimeout(() => map.invalidateSize(), 50); }
