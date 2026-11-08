@@ -288,8 +288,8 @@
       
       if (profile.misconductData && profile.misconductData.length > 0) {
           profile.misconductData.forEach(item => {
-              // Hide the triangle if the score is exactly 0
-              const markerStyle = item.score === 0 ? 'display: none;' : `left: ${scaleToPercent(item.score)}%;`;
+              // Now hides the triangle if the score is 1
+              const markerStyle = item.score <= 1 ? 'display: none;' : `left: ${scaleToPercent(item.score)}%;`;
               
               misconductHtml += `
                   <div class="metric-bar-container">
