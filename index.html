@@ -246,7 +246,7 @@
     function buildOrgNode(profile, isActive = false) {
       if(!profile) return '';
       const activeClass = isActive ? 'border-[#9f1239] bg-[#f87171] border-[4px]' : 'border-[#94a3b8] bg-[#cbd5e1] border-[3px] hover:border-slate-500 transition';
-      const imgHtml = profile.portrait ? `<img src="${profile.portrait}" class="w-full h-full object-cover draggable="false"">` : `<i class="fa-solid fa-user text-white"></i>`;
+      const imgHtml = profile.portrait ? `<img src="${profile.portrait}" class="w-full h-full object-cover" draggable="false">` : `<i class="fa-solid fa-user text-white"></i>`;
       return `
         <div class="flex flex-col items-center cursor-pointer group" onclick="openSidebarById('${profile.id}')">
           <div class="w-[50px] h-[50px] rounded-lg flex items-center justify-center text-xl overflow-hidden mb-1 shadow-sm ${activeClass}">
@@ -288,7 +288,6 @@
       
       if (profile.misconductData && profile.misconductData.length > 0) {
           profile.misconductData.forEach(item => {
-              // Now hides the triangle if the score is 1
               const markerStyle = item.score <= 1 ? 'display: none;' : `left: ${scaleToPercent(item.score)}%;`;
               
               misconductHtml += `
