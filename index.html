@@ -101,7 +101,15 @@
   </div>
 
   <script>
-    const map = L.map('map', { center: [39.8283, -98.5795], zoom: 5, minZoom: 3, zoomControl: false, attributionControl: false });
+    const map = L.map('map', { 
+      center: [39.8283, -98.5795], 
+      zoom: 5, 
+      minZoom: 3, 
+      zoomControl: false, 
+      attributionControl: false,
+      maxBounds: [[-90, -180], [90, 180]],
+      maxBoundsViscosity: 1.0
+    });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     const tileLayers = {
