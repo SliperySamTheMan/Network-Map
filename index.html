@@ -14,7 +14,7 @@
   <style>
     body, html { margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow: hidden; }
     #map-container { display: flex; height: 100vh; width: 100%; position: relative; } 
-    #map { flex: 1; height: 100%; z-index: 1; }
+    #map { flex: 1; height: 100%; z-index: 1; background: #e2e8f0; }
     .leaflet-control-attribution, .leaflet-attribution-flag { display: none !important; }
     
     #left-sidebar { width: 440px; background: white; border-right: 4px solid #475569; z-index: 20; display: none; flex-direction: column; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
@@ -36,6 +36,8 @@
     .geonet-cluster-marker:hover { transform: scale(1.1); }
     .geonet-card-marker { background: #ffffff; border: 2px solid #0f172a; border-radius: 9999px; padding: 3px 10px 3px 3px; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18); white-space: nowrap; transition: all 0.15s ease; cursor: pointer;}
     .geonet-card-marker:hover { border-color: #ef4444; transform: translateY(-2px); }
+    
+    #error-banner { display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 12px 24px; border-radius: 8px; font-weight: bold; z-index: 9999; box-shadow: 0 10px 25px rgba(239,68,68,0.5); }
   </style>
 </head>
 <body class="flex flex-col h-screen select-none">
@@ -64,15 +66,15 @@
           <div>Org: <span id="sb-org" class="font-normal text-slate-600"></span></div>
         </div>
       </div>
-
       <div id="misconduct-container" class="px-5"></div>
-
       <div id="org-scroll-container">
         <div id="org-canvas-content" class="org-canvas"></div>
       </div>
     </div>
 
     <div id="map"></div>
+    <div id="error-banner">API Error: Check browser console.</div>
+
     <button onclick="syncProfiles()" class="absolute top-4 left-4 z-10 w-10 h-10 rounded-full bg-slate-900 text-emerald-400 flex items-center justify-center shadow-lg hover:bg-slate-800 transition" title="Refresh Live Data">
       <i class="fa-solid fa-rotate text-sm"></i>
     </button>
@@ -97,6 +99,7 @@
   </div>
 
   <script>
+    // Initialize Map Core IMMEDIATELY
     const map = L.map('map', { 
       center: [39.8283, -98.5795], 
       zoom: 5, 
@@ -119,41 +122,25 @@
     const nodesLayerGroup = L.layerGroup().addTo(map);
     let PROFILES = [];
 
+    // Map UI Interactions
     const orgContainer = document.getElementById('org-scroll-container');
     const orgCanvas = document.getElementById('org-canvas-content');
     let isDragging = false;
     let startX, startY, initialTranslateX = 0, initialTranslateY = 0;
     let currentTranslateX = 0, currentTranslateY = 0;
 
-    orgContainer.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        startX = e.pageX;
-        startY = e.pageY;
-    });
-
-    window.addEventListener('mouseup', () => {
-        if (isDragging) {
-            isDragging = false;
-            initialTranslateX = currentTranslateX;
-            initialTranslateY = currentTranslateY;
-        }
-    });
-
+    orgContainer.addEventListener('mousedown', (e) => { isDragging = true; startX = e.pageX; startY = e.pageY; });
+    window.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; initialTranslateX = currentTranslateX; initialTranslateY = currentTranslateY; } });
     window.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
         e.preventDefault();
-        const dx = e.pageX - startX;
-        const dy = e.pageY - startY;
-        currentTranslateX = initialTranslateX + dx;
-        currentTranslateY = initialTranslateY + dy;
+        const dx = e.pageX - startX; const dy = e.pageY - startY;
+        currentTranslateX = initialTranslateX + dx; currentTranslateY = initialTranslateY + dy;
         orgCanvas.style.transform = `translate(${currentTranslateX}px, ${currentTranslateY}px)`;
     });
 
     function resetOrgChartPosition() {
-        initialTranslateX = 0;
-        initialTranslateY = 0;
-        currentTranslateX = 0;
-        currentTranslateY = 0;
+        initialTranslateX = 0; initialTranslateY = 0; currentTranslateX = 0; currentTranslateY = 0;
         orgCanvas.style.transform = `translate(0px, 0px)`;
     }
 
@@ -167,6 +154,7 @@
 
     map.on('zoomend', () => renderNetwork());
 
+    // Core Drawing Logic
     function renderNetwork() {
       nodesLayerGroup.clearLayers();
       linesLayerGroup.clearLayers();
@@ -180,9 +168,7 @@
         higherConnections.forEach(targetId => {
           const target = activeProfiles.find(t => t.id === targetId);
           if (target) {
-            L.polyline([[p.lat, p.lng], [target.lat, target.lng]], {
-              color: '#ef4444', weight: 2.5, opacity: 0.6, dashArray: '6, 6'
-            }).addTo(linesLayerGroup);
+            L.polyline([[p.lat, p.lng], [target.lat, target.lng]], { color: '#ef4444', weight: 2.5, opacity: 0.6, dashArray: '6, 6' }).addTo(linesLayerGroup);
           }
         });
         
@@ -190,9 +176,7 @@
         lowerConnections.forEach(targetId => {
           const target = activeProfiles.find(t => t.id === targetId);
           if (target) {
-            L.polyline([[p.lat, p.lng], [target.lat, target.lng]], {
-              color: '#ef4444', weight: 2.5, opacity: 0.6, dashArray: '6, 6'
-            }).addTo(linesLayerGroup);
+            L.polyline([[p.lat, p.lng], [target.lat, target.lng]], { color: '#ef4444', weight: 2.5, opacity: 0.6, dashArray: '6, 6' }).addTo(linesLayerGroup);
           }
         });
       });
@@ -226,15 +210,10 @@
     }
 
     function createProfileMarker(profile) {
-      const avatarHtml = profile.portrait 
-        ? `<img src="${profile.portrait}" class="w-full h-full object-cover">` 
-        : `<span class="text-[10px] font-bold text-slate-500">${profile.name.substring(0,2).toUpperCase()}</span>`;
-        
+      const avatarHtml = profile.portrait ? `<img src="${profile.portrait}" class="w-full h-full object-cover">` : `<span class="text-[10px] font-bold text-slate-500">${profile.name.substring(0,2).toUpperCase()}</span>`;
       const html = `
         <div class="geonet-card-marker">
-          <div class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center border border-slate-300 overflow-hidden shrink-0">
-            ${avatarHtml}
-          </div>
+          <div class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center border border-slate-300 overflow-hidden shrink-0">${avatarHtml}</div>
           <div class="pr-1">
             <div class="text-[11px] font-bold text-slate-900 leading-none">${profile.name}</div>
             <div class="text-[9px] font-semibold text-red-600 leading-tight">${profile.rank || profile.organization || 'Member'}</div>
@@ -257,37 +236,27 @@
         </div>`;
     }
 
-    function openSidebarById(id) {
-      const p = PROFILES.find(x => x.id === id);
-      if(p) openSidebar(p);
-    }
+    function openSidebarById(id) { const p = PROFILES.find(x => x.id === id); if(p) openSidebar(p); }
 
     function openSidebar(profile) {
       document.getElementById('left-sidebar').classList.add('active');
       setTimeout(() => map.invalidateSize(), 50); 
       map.flyTo([profile.lat, profile.lng], 10, { duration: 0.5 });
-      
       resetOrgChartPosition();
 
       document.getElementById('sb-name').textContent = profile.name;
       document.getElementById('sb-rank').textContent = profile.rank || '';
       document.getElementById('sb-org').textContent = profile.organization || '--------';
       
-      // Update link to point to GitHub profile template
       const currentApi = new URLSearchParams(window.location.search).get('api') || 'https://projectostracon.com/wp-json/geonet/v1/profiles';
       document.getElementById('sb-seemore').href = `profile.html?id=${profile.id}&api=${encodeURIComponent(currentApi)}`;
 
       const portraitContainer = document.getElementById('sb-portrait-container');
-      if (profile.portrait) {
-        document.getElementById('sb-portrait').src = profile.portrait;
-        portraitContainer.classList.remove('hidden');
-      } else {
-        portraitContainer.classList.add('hidden');
-      }
+      if (profile.portrait) { document.getElementById('sb-portrait').src = profile.portrait; portraitContainer.classList.remove('hidden'); } 
+      else { portraitContainer.classList.add('hidden'); }
 
       const misconductContainer = document.getElementById('misconduct-container');
       let misconductHtml = '';
-      
       const scaleToPercent = (score) => (Math.max(1, Math.min(5, score || 1)) - 1) * 25;
       
       if (profile.misconductData && profile.misconductData.length > 0) {
@@ -300,35 +269,26 @@
                           <div class="metric-marker" style="${markerStyle}"></div>
                       </div>
                       <div class="text-[10px] font-bold text-slate-500 mt-1.5">${item.label}</div>
-                  </div>
-              `;
+                  </div>`;
           });
       }
       misconductContainer.innerHTML = misconductHtml;
 
       const orgCanvasContent = document.getElementById('org-canvas-content');
       let orgHtml = `<div class="flex flex-col items-center">`;
-      
       const supIds = profile.supervisorIds || [];
       if (supIds.length > 0) {
         orgHtml += `<div class="flex gap-6 justify-center">`;
         supIds.forEach(id => { const s = PROFILES.find(x => x.id === id); if(s) orgHtml += buildOrgNode(s); });
         orgHtml += `</div><div class="tree-line-v h-6"></div>`;
       }
-      
       orgHtml += buildOrgNode(profile, true);
-      
       const subIds = profile.subordinateIds || [];
       if (subIds.length > 0) {
-        orgHtml += `<div class="tree-line-v h-6"></div>`;
-        orgHtml += `<div class="relative w-full flex justify-center gap-6 pt-4 border-t-2 border-slate-500 mt-[-2px]">`;
-        subIds.forEach(id => { 
-          const s = PROFILES.find(x => x.id === id); 
-          if(s) orgHtml += `<div class="relative -mt-4 flex flex-col items-center"><div class="tree-line-v h-4"></div>${buildOrgNode(s)}</div>`; 
-        });
+        orgHtml += `<div class="tree-line-v h-6"></div><div class="relative w-full flex justify-center gap-6 pt-4 border-t-2 border-slate-500 mt-[-2px]">`;
+        subIds.forEach(id => { const s = PROFILES.find(x => x.id === id); if(s) orgHtml += `<div class="relative -mt-4 flex flex-col items-center"><div class="tree-line-v h-4"></div>${buildOrgNode(s)}</div>`; });
         orgHtml += `</div>`;
       }
-      
       orgHtml += `</div>`;
       orgCanvasContent.innerHTML = orgHtml;
     }
@@ -336,9 +296,17 @@
     function closeSidebar() { document.getElementById('left-sidebar').classList.remove('active'); setTimeout(() => map.invalidateSize(), 50); }
 
     function applyProfilesToMap(rawList) {
-      PROFILES = (rawList || []).map(p => {
-        return { ...p, lat: parseFloat(p.lat), lng: parseFloat(p.lng) };
-      }).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
+      // Safe Mode: If rawList is an error object instead of an array, catch it.
+      if (!Array.isArray(rawList)) {
+          console.error("Critical API Error: WordPress did not return an array.", rawList);
+          document.getElementById('error-banner').style.display = 'block';
+          document.getElementById('error-banner').textContent = "Database Error: Profiles could not be loaded.";
+          return;
+      }
+
+      document.getElementById('error-banner').style.display = 'none';
+
+      PROFILES = rawList.map(p => { return { ...p, lat: parseFloat(p.lat), lng: parseFloat(p.lng) }; }).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
 
       const orgSelect = document.getElementById('select-org-filter');
       const orgs = [...new Set(PROFILES.map(p => p.organization || 'Unassigned'))].sort();
@@ -353,11 +321,20 @@
       if(apiEndpoint) {
         try {
           const res = await fetch(apiEndpoint, { cache: 'no-store' });
-          if (res.ok) applyProfilesToMap(await res.json());
-        } catch (e) { console.error("Could not reach WordPress API:", e); }
+          if (!res.ok) throw new Error("API returned status " + res.status);
+          
+          const rawData = await res.json();
+          applyProfilesToMap(rawData);
+          
+        } catch (e) { 
+          console.error("API Fetch Error:", e); 
+          document.getElementById('error-banner').style.display = 'block';
+          document.getElementById('error-banner').textContent = "Network Error: Could not connect to WordPress.";
+        }
       }
     }
 
+    // Run Fetch
     syncProfiles();
   </script>
 </body>
