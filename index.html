@@ -57,7 +57,8 @@
               <div id="sb-rank" class="text-xs font-bold text-red-600 truncate mt-0.5">Rank</div>
             </div>
           </div>
-          <a id="sb-seemore" href="#" target="_top" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-1.5 rounded-lg border-2 border-black shadow-sm text-sm transition-colors whitespace-nowrap mt-1">
+          <!-- target="_top" has been removed here to keep the user inside the WordPress site -->
+          <a id="sb-seemore" href="#" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-1.5 rounded-lg border-2 border-black shadow-sm text-sm transition-colors whitespace-nowrap mt-1">
             See More
           </a>
         </div>
@@ -99,7 +100,6 @@
   </div>
 
   <script>
-    // Initialize Map Core IMMEDIATELY
     const map = L.map('map', { 
       center: [39.8283, -98.5795], 
       zoom: 5, 
@@ -122,7 +122,6 @@
     const nodesLayerGroup = L.layerGroup().addTo(map);
     let PROFILES = [];
 
-    // Map UI Interactions
     const orgContainer = document.getElementById('org-scroll-container');
     const orgCanvas = document.getElementById('org-canvas-content');
     let isDragging = false;
@@ -154,7 +153,6 @@
 
     map.on('zoomend', () => renderNetwork());
 
-    // Core Drawing Logic
     function renderNetwork() {
       nodesLayerGroup.clearLayers();
       linesLayerGroup.clearLayers();
@@ -296,16 +294,13 @@
     function closeSidebar() { document.getElementById('left-sidebar').classList.remove('active'); setTimeout(() => map.invalidateSize(), 50); }
 
     function applyProfilesToMap(rawList) {
-      // Safe Mode: If rawList is an error object instead of an array, catch it.
       if (!Array.isArray(rawList)) {
           console.error("Critical API Error: WordPress did not return an array.", rawList);
           document.getElementById('error-banner').style.display = 'block';
           document.getElementById('error-banner').textContent = "Database Error: Profiles could not be loaded.";
           return;
       }
-
       document.getElementById('error-banner').style.display = 'none';
-
       PROFILES = rawList.map(p => { return { ...p, lat: parseFloat(p.lat), lng: parseFloat(p.lng) }; }).filter(p => !isNaN(p.lat) && !isNaN(p.lng));
 
       const orgSelect = document.getElementById('select-org-filter');
@@ -322,10 +317,8 @@
         try {
           const res = await fetch(apiEndpoint, { cache: 'no-store' });
           if (!res.ok) throw new Error("API returned status " + res.status);
-          
           const rawData = await res.json();
           applyProfilesToMap(rawData);
-          
         } catch (e) { 
           console.error("API Fetch Error:", e); 
           document.getElementById('error-banner').style.display = 'block';
@@ -334,7 +327,6 @@
       }
     }
 
-    // Run Fetch
     syncProfiles();
   </script>
 </body>
