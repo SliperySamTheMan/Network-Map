@@ -21,7 +21,7 @@
     #doc-modal.active { display: flex; }
     .modal-content { background: white; width: 98%; max-width: 1800px; height: 98vh; border-radius: 16px; position: relative; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); overflow: hidden; border: 4px solid #cbd5e1; }
     .modal-header { padding: 16px 24px; background: #f1f5f9; border-bottom: 2px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; }
-    .modal-body { flex: 1; position: relative; background: #334155; } /* Darkened background for raw PDFs */
+    .modal-body { flex: 1; position: relative; background: #334155; } 
     
     /* Document Close Button */
     .close-btn { color: #ef4444; background: white; border: 2px solid #ef4444; border-radius: 8px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(239,68,68,0.2); }
@@ -36,8 +36,19 @@
 </head>
 <body class="flex flex-col">
 
+  <!-- Main Three-Column Layout -->
   <div class="flex h-screen w-full max-w-[1600px] mx-auto p-6 gap-8">
+    
+    <!-- LEFT COLUMN: Identity, Org Chart, Misconduct -->
     <div class="w-[350px] shrink-0 flex flex-col h-full overflow-y-auto custom-scroll pr-4 pb-12">
+      
+      <!-- Back to Map Button -->
+      <a id="btn-back" href="index.html" class="group flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition-all w-full mb-8 shadow-md shrink-0">
+        <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i> 
+        Back to Map
+      </a>
+
+      <!-- Portrait & ID -->
       <div class="flex flex-col items-center text-center mb-6">
         <div class="w-[200px] h-[200px] bg-slate-200 border-4 border-slate-300 rounded-xl overflow-hidden mb-4 shadow-sm">
           <img id="p-portrait" src="" class="w-full h-full object-cover hidden">
@@ -47,27 +58,41 @@
         <h2 id="p-org" class="text-[15px] font-bold text-slate-700 leading-snug"></h2>
         <h3 id="p-rank" class="text-[14px] font-bold text-red-600 leading-snug"></h3>
       </div>
+
+      <!-- Org Chart Box -->
       <div class="bg-white border-[3px] border-black rounded-2xl p-4 mb-6 shadow-sm min-h-[200px] flex items-center justify-center relative overflow-hidden group">
         <div id="p-orgchart" class="org-canvas w-full"></div>
       </div>
+
+      <!-- Misconduct Text List -->
       <div id="p-misconduct" class="text-[14px] font-bold text-slate-800 space-y-1.5 px-2"></div>
     </div>
 
+    <!-- Divider Line -->
     <div class="w-1 bg-slate-400 rounded-full my-4 opacity-50 shrink-0"></div>
 
+    <!-- MIDDLE COLUMN: Summary -->
     <div class="flex-1 flex flex-col h-full px-4 min-w-0">
       <h2 class="text-3xl font-extrabold text-center text-slate-900 mb-8 mt-2 tracking-tight">Summary</h2>
-      <div id="p-summary" class="flex-1 overflow-y-auto custom-scroll text-[16px] text-slate-800 leading-relaxed font-medium pb-12"></div>
+      <div id="p-summary" class="flex-1 overflow-y-auto custom-scroll text-[16px] text-slate-800 leading-relaxed font-medium pb-12">
+        <!-- Content injected here -->
+      </div>
     </div>
 
+    <!-- Divider Line -->
     <div class="w-1 bg-slate-400 rounded-full my-4 opacity-50 shrink-0"></div>
 
+    <!-- RIGHT COLUMN: Related Documents -->
     <div class="w-[300px] shrink-0 flex flex-col h-full pl-4">
       <h2 class="text-3xl font-extrabold text-center text-slate-900 mb-8 mt-2 tracking-tight">Sources</h2>
-      <div id="p-documents" class="flex flex-col gap-5 overflow-y-auto custom-scroll pb-12"></div>
+      <div id="p-documents" class="flex flex-col gap-5 overflow-y-auto custom-scroll pb-12">
+        <!-- Document links injected here -->
+      </div>
     </div>
+
   </div>
 
+  <!-- Document Modal Overlay -->
   <div id="doc-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -87,6 +112,9 @@
       const urlParams = new URLSearchParams(window.location.search);
       const targetId = urlParams.get('id');
       const apiEndpoint = urlParams.get('api') || 'https://projectostracon.com/wp-json/geonet/v1/profiles';
+
+      // Pass the API endpoint back to the map button so it reconnects seamlessly
+      document.getElementById('btn-back').href = `index.html?api=${encodeURIComponent(apiEndpoint)}`;
 
       if(!targetId) {
           document.getElementById('p-name').textContent = "Error: No Profile ID provided.";
@@ -161,6 +189,7 @@
 
     function buildOrgChart(profile) {
       let orgHtml = `<div class="flex flex-col items-center">`;
+      
       const supIds = profile.supervisorIds || [];
       if (supIds.length > 0) {
         orgHtml += `<div class="flex gap-4 justify-center">`;
@@ -180,6 +209,7 @@
         });
         orgHtml += `</div>`;
       }
+      
       orgHtml += `</div>`;
       document.getElementById('p-orgchart').innerHTML = orgHtml;
     }
