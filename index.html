@@ -98,8 +98,9 @@
   </div>
 
   <script>
-    // Tell WordPress to ALWAYS SHOW the header when on the map view
+    // Double-Fire: Tell WordPress to ALWAYS SHOW the header instantly, and again when fully loaded.
     window.parent.postMessage('show-header', '*');
+    window.addEventListener('DOMContentLoaded', () => { window.parent.postMessage('show-header', '*'); });
 
     const map = L.map('map', { 
       center: [39.8283, -98.5795], 
@@ -112,7 +113,6 @@
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // Keep map crisp if iframe resizes
     window.addEventListener('resize', () => { map.invalidateSize(); });
 
     const tileLayers = {
