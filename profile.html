@@ -42,8 +42,8 @@
     <!-- LEFT COLUMN: Identity, Org Chart, Misconduct -->
     <div class="w-[350px] shrink-0 flex flex-col h-full overflow-y-auto custom-scroll pr-4 pb-12">
       
-      <!-- Back to Map Button - Stays inside frame -->
-      <a id="btn-back" href="#" class="group flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition-all w-full mb-8 shadow-md shrink-0 cursor-pointer">
+      <!-- Back to Map Button - Added mt-2 for white space above -->
+      <a id="btn-back" href="#" class="group flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition-all w-full mt-2 mb-8 shadow-md shrink-0 cursor-pointer">
         <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i> 
         Back to Map
       </a>
@@ -102,8 +102,9 @@
   </div>
 
   <script>
-    // Tell WordPress to HIDE the header when viewing a profile
+    // Double-Fire: Tell WordPress to HIDE the header instantly, and again when fully loaded.
     window.parent.postMessage('hide-header', '*');
+    window.addEventListener('DOMContentLoaded', () => { window.parent.postMessage('hide-header', '*'); });
 
     let ALL_PROFILES = [];
 
@@ -112,7 +113,6 @@
       const targetId = urlParams.get('id');
       const apiEndpoint = urlParams.get('api') || 'https://projectostracon.com/wp-json/geonet/v1/profiles';
 
-      // Pass the API endpoint back to the map button so it reconnects seamlessly
       document.getElementById('btn-back').href = `index.html?api=${encodeURIComponent(apiEndpoint)}`;
 
       if(!targetId) {
