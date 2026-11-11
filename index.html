@@ -42,7 +42,6 @@
 </head>
 <body class="flex flex-col h-screen select-none">
   <div id="map-container">
-    
     <div id="left-sidebar">
       <div class="p-5 relative shrink-0">
         <button onclick="closeSidebar()" class="absolute top-2 right-3 text-slate-400 hover:text-slate-900 text-xl"><i class="fa-solid fa-xmark"></i></button>
@@ -57,7 +56,6 @@
               <div id="sb-rank" class="text-xs font-bold text-red-600 truncate mt-0.5">Rank</div>
             </div>
           </div>
-          <!-- target="_top" has been removed here to keep the user inside the WordPress site -->
           <a id="sb-seemore" href="#" class="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-1.5 rounded-lg border-2 border-black shadow-sm text-sm transition-colors whitespace-nowrap mt-1">
             See More
           </a>
@@ -100,6 +98,9 @@
   </div>
 
   <script>
+    // Tell WordPress to ALWAYS SHOW the header when on the map view
+    window.parent.postMessage('show-header', '*');
+
     const map = L.map('map', { 
       center: [39.8283, -98.5795], 
       zoom: 5, 
@@ -110,6 +111,9 @@
       maxBoundsViscosity: 1.0
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    // Keep map crisp if iframe resizes
+    window.addEventListener('resize', () => { map.invalidateSize(); });
 
     const tileLayers = {
       googleLight: L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20 }),
