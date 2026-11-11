@@ -16,7 +16,7 @@
     .org-canvas { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 0; }
     .tree-line-v { width: 2px; background: #64748b; }
     
-    /* Document Modal Overlay */
+    /* Document Modal Overlay - EXPANDED SIZE */
     #doc-modal { display: none; position: fixed; inset: 0; z-index: 50; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 1rem; }
     #doc-modal.active { display: flex; }
     .modal-content { background: white; width: 98%; max-width: 1800px; height: 98vh; border-radius: 16px; position: relative; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); overflow: hidden; border: 4px solid #cbd5e1; }
@@ -42,8 +42,8 @@
     <!-- LEFT COLUMN: Identity, Org Chart, Misconduct -->
     <div class="w-[350px] shrink-0 flex flex-col h-full overflow-y-auto custom-scroll pr-4 pb-12">
       
-      <!-- Back to Map Button - targeting parent window -->
-      <a id="btn-back" href="https://projectostracon.com/" onclick="window.top.location.href='https://projectostracon.com/';" class="group flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition-all w-full mb-8 shadow-md shrink-0 cursor-pointer">
+      <!-- Back to Map Button - Stays inside frame -->
+      <a id="btn-back" href="#" class="group flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 px-4 rounded-xl transition-all w-full mb-8 shadow-md shrink-0 cursor-pointer">
         <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i> 
         Back to Map
       </a>
@@ -74,9 +74,7 @@
     <!-- MIDDLE COLUMN: Summary -->
     <div class="flex-1 flex flex-col h-full px-4 min-w-0">
       <h2 class="text-3xl font-extrabold text-center text-slate-900 mb-8 mt-2 tracking-tight">Summary</h2>
-      <div id="p-summary" class="flex-1 overflow-y-auto custom-scroll text-[16px] text-slate-800 leading-relaxed font-medium pb-12">
-        <!-- Content injected here -->
-      </div>
+      <div id="p-summary" class="flex-1 overflow-y-auto custom-scroll text-[16px] text-slate-800 leading-relaxed font-medium pb-12"></div>
     </div>
 
     <!-- Divider Line -->
@@ -85,9 +83,7 @@
     <!-- RIGHT COLUMN: Related Documents -->
     <div class="w-[300px] shrink-0 flex flex-col h-full pl-4">
       <h2 class="text-3xl font-extrabold text-center text-slate-900 mb-8 mt-2 tracking-tight">Sources</h2>
-      <div id="p-documents" class="flex flex-col gap-5 overflow-y-auto custom-scroll pb-12">
-        <!-- Document links injected here -->
-      </div>
+      <div id="p-documents" class="flex flex-col gap-5 overflow-y-auto custom-scroll pb-12"></div>
     </div>
 
   </div>
@@ -100,19 +96,24 @@
         <button onclick="closeDocument()" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
       </div>
       <div class="modal-body">
-        <!-- added allowfullscreen parameter for media elements -->
         <iframe id="modal-iframe" src="" class="absolute inset-0 w-full h-full border-none bg-slate-100" allowfullscreen></iframe>
       </div>
     </div>
   </div>
 
   <script>
+    // Tell WordPress to HIDE the header when viewing a profile
+    window.parent.postMessage('hide-header', '*');
+
     let ALL_PROFILES = [];
 
     async function loadProfileData() {
       const urlParams = new URLSearchParams(window.location.search);
       const targetId = urlParams.get('id');
       const apiEndpoint = urlParams.get('api') || 'https://projectostracon.com/wp-json/geonet/v1/profiles';
+
+      // Pass the API endpoint back to the map button so it reconnects seamlessly
+      document.getElementById('btn-back').href = `index.html?api=${encodeURIComponent(apiEndpoint)}`;
 
       if(!targetId) {
           document.getElementById('p-name').textContent = "Error: No Profile ID provided.";
@@ -187,16 +188,13 @@
 
     function buildOrgChart(profile) {
       let orgHtml = `<div class="flex flex-col items-center">`;
-      
       const supIds = profile.supervisorIds || [];
       if (supIds.length > 0) {
         orgHtml += `<div class="flex gap-4 justify-center">`;
         supIds.forEach(id => { const s = ALL_PROFILES.find(x => x.id === id); if(s) orgHtml += createOrgNode(s); });
         orgHtml += `</div><div class="tree-line-v h-4"></div>`;
       }
-      
       orgHtml += createOrgNode(profile, true);
-      
       const subIds = profile.subordinateIds || [];
       if (subIds.length > 0) {
         orgHtml += `<div class="tree-line-v h-4"></div>`;
@@ -207,7 +205,6 @@
         });
         orgHtml += `</div>`;
       }
-      
       orgHtml += `</div>`;
       document.getElementById('p-orgchart').innerHTML = orgHtml;
     }
